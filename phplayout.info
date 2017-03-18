@@ -1,0 +1,7 @@
+name = PHP Layout
+description = PHP Layout library support, brings page composition capacity to Drupal
+core = 7.x
+package = Utility
+php = 7.0
+dependencies[] = plusql
+dependencies[] = sf_dic

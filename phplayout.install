@@ -1,0 +1,164 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function phplayout_schema() {
+  return [
+
+    'layout' => [
+      'description' => "Layouts",
+      'fields' => [
+        'id' => [
+          'description' => "Primary key",
+          'type'        => 'serial',
+          'not null'    => true,
+        ],
+        'node_id' => [
+          'description' => "Node this layout is attached to identifier",
+          'type'        => 'int',
+          'unsigned'    => true,
+          'not null'    => false,
+          'default'     => null,
+        ],
+        'site_id' => [
+          'description' => "Site this layout is attached to, usable for when ucms_site is active",
+          'type'        => 'int',
+          'unsigned'    => true,
+          'not null'    => false,
+          'default'     => null,
+        ],
+        'region' => [
+          'description' => "Region this layout is attached to",
+          'type'        => 'varchar',
+          'length'      => 128,
+          'not null'    => false,
+          'default'     => null,
+        ],
+      ],
+      'primary key' => ['id'],
+      'unique keys' => [
+        'node_id_region' => ['node_id', 'region'],
+      ],
+      'foreign keys' => [
+        'node_id' => [
+          'table'   => 'node',
+          'columns' => ['node_id' => 'nid'],
+          'delete'  => 'cascade',
+        ],
+      ],
+    ],
+
+    'layout_data' => [
+      'description' => "Layout grid content",
+      'fields' => [
+        'id' => [
+          'description' => "Primary key",
+          'type'        => 'serial',
+          'not null'    => true,
+        ],
+        'parent_id' => [
+          'description' => "Parent container in this layout",
+          'type'        => 'int',
+          'not null'    => false,
+          'default'     => null,
+        ],
+        'layout_id' => [
+          'description' => "Parent container in this layout",
+          'type'        => 'int',
+          'not null'    => true,
+        ],
+        'item_type' => [
+          'description' => 'Item type',
+          'type'        => 'varchar',
+          'length'      => 128,
+          'not null'    => true,
+        ],
+        'item_id' => [
+          'description' => 'Item identifier',
+          'type'        => 'varchar',
+          'length'      => 128,
+          'not null'    => true,
+        ],
+        'style' => [
+          'description' => 'Item display style',
+          'type'        => 'varchar',
+          'length'      => 128,
+          'not null'    => false,
+          'default'     => null,
+        ],
+        'position' => [
+          'description' => "Item position relative to parent container",
+          'type'        => 'int',
+          'not null'    => true,
+          'default'     => 0,
+        ],
+        'options' => [
+          'description' => 'Item display options',
+          'type'        => 'text',
+          'not null'    => false,
+          'default'     => null,
+        ],
+      ],
+      'primary key' => ['id'],
+      'foreign keys' => [
+        'parent_id' => [
+          'table'   => 'layout_data',
+          'columns' => ['parent_id' => 'id'],
+          'delete'  => 'cascade',
+        ],
+        'layout_id' => [
+          'table'   => 'layout',
+          'columns' => ['layout_id' => 'id'],
+          'delete'  => 'cascade',
+        ],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_install().
+ */
+function phplayout_install() {
+  db_constraint_fix_processed('phplayout');
+}
+
+/**
+ * Implements hook_schema_alter().
+ */
+function phplayout_schema_alter(&$schema) {
+  // By declaring the foreign key right here, we avoid to add it manually
+  // on the 'ucms_site' module install.
+  if (module_exists('ucms_site')) {
+    $schema['layout']['foreign keys']['site_id'] = [
+      'site_id' => [
+        'table'   => 'ucms_site',
+        'columns' => ['site_id' => 'id'],
+        'delete'  => 'cascade',
+      ],
+    ];
+  }
+}
+
+/**
+ * Implements hook_modules_disabled().
+ */
+function phplayout_module_disabled($modules) {
+  // When disabling 'ucms_site' we also disable the constraint on the
+  // site identifier key, this will ensure we won't have terrible SQL
+  // exceptions if 'ucms_site' gets uninstalled.
+  if (in_array('ucms_site', $modules)) {
+    if (db_constraint_exists('phplayout', 'layout', 'site_id')) {
+      db_constraint_drop('phplayout', 'layout', 'site_id');
+    }
+  }
+  db_constraint_fix_processed('phplayout');
+}
+
+/**
+ * Implements hook_modules_disabled().
+ */
+function phplayout_modules_enabled($modules) {
+  db_constraint_fix_processed('phplayout');
+}

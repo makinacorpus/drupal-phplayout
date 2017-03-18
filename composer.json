@@ -1,0 +1,42 @@
+{
+    "name" : "makinacorpus/drupal-phplayout",
+    "type" : "drupal-module",
+    "description" : "PHP Layout library support, brings page composition capacity to Drupal",
+    "homepage" : "http://github.com/makinacorpus/drupal-phplayout",
+    "license" : "GPL-2",
+    "authors" : [{
+            "name" : "Pierre Rineau",
+            "email" : "pierre.rineau@makina-corpus.com"
+        }, {
+            "name" : "Makina Corpus",
+            "homepage" : "http://makina-corpus.com"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:makinacorpus/php-layout.git",
+            "no-api": true
+        }
+    ],
+    "autoload" : {
+        "psr-4" : {
+            "MakinaCorpus\\Drupal\\Layout\\" : "src/"
+        }
+    },
+    "autoload-dev" : {
+        "psr-4" : {
+            "MakinaCorpus\\Drupal\\Layout\\Tests\\" : "tests/"
+        }
+    },
+    "minimum-stability" : "dev",
+    "prefer-stable" : true,
+    "require-dev" : {
+        "phpunit/phpunit" : "^5"
+    },
+    "require" : {
+        "makinacorpus/drupal-plusql" : "^1",
+        "makinacorpus/drupal-sf-dic" : "^3.2",
+        "makinacorpus/php-layout" : "*"
+    }
+}
