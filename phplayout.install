@@ -4,7 +4,7 @@
  * Implements hook_schema().
  */
 function phplayout_schema() {
-  return [
+  $schema = [
 
     'layout' => [
       'description' => "Layouts",
@@ -115,6 +115,11 @@ function phplayout_schema() {
       ],
     ],
   ];
+
+  $schema['cache_layout'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_layout']['description'] = 'Cache table for the Field module to store already built field information.';
+
+  return $schema;
 }
 
 /**
@@ -161,4 +166,13 @@ function phplayout_module_disabled($modules) {
  */
 function phplayout_modules_enabled($modules) {
   db_constraint_fix_processed('phplayout');
+}
+
+/**
+ * Installs the 'cache_layout' table.
+ */
+function phplayout_update_7001() {
+  if (!db_table_exists('cache_layout')) {
+    db_create_table('cache_layout', drupal_get_schema_unprocessed('phplayout', 'cache_layout'));
+  }
 }

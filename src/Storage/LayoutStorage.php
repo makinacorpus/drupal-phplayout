@@ -31,6 +31,7 @@ class LayoutStorage implements LayoutStorageInterface
      * Default constructor
      *
      * @param \DatabaseConnection $database
+     * @param ItemTypeRegistry $typeRegistry
      */
     public function __construct(\DatabaseConnection $database, ItemTypeRegistry $typeRegistry)
     {

@@ -35,3 +35,8 @@ services:
   php_layout.storage:
     class: MakinaCorpus\Drupal\Layout\Storage\LayoutStorage
     arguments: ['@database', '@php_layout.type_registry']
+
+  cache.layout:
+    class: Drupal\Core\Cache\CacheBackendInterface
+    factory: cache_factory:get
+    arguments: [cache_layout]

@@ -37,7 +37,7 @@ class StorageTest extends AbstractDrupalTest
      *
      * @return LayoutStorageInterface
      */
-    private function createStorage() : LayoutStorageInterface
+    protected function createStorage() : LayoutStorageInterface
     {
         return new LayoutStorage($this->getDatabaseConnection(), $this->createTypeRegistry(new XmlGridRenderer()));
     }
