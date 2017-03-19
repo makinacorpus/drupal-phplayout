@@ -2,15 +2,32 @@
 
 namespace MakinaCorpus\Drupal\Layout\Type;
 
-use MakinaCorpus\Layout\Type\ItemTypeInterface;
+use Drupal\Core\Entity\EntityManager;
+use MakinaCorpus\Layout\Error\TypeMismatchError;
 use MakinaCorpus\Layout\Grid\ItemInterface;
 use MakinaCorpus\Layout\Render\RenderCollection;
+use MakinaCorpus\Layout\Type\ItemTypeInterface;
 
 /**
  * Supports node as layout items
  */
 class NodeType implements ItemTypeInterface
 {
+    /**
+     * @var EntityManager
+     */
+    private $entityManager;
+
+    /**
+     * Default constructor
+     *
+     * @param EntityManager $entityManager
+     */
+    public function __construct(EntityManager $entityManager)
+    {
+        $this->entityManager = $entityManager;
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -36,56 +53,106 @@ class NodeType implements ItemTypeInterface
     }
 
     /**
-     * Preload items data if necessary, this will be call at runtime prior
-     * to full grid rendering, it allows the implementor to have access to
-     * a flatten tree and preload everything it can
+     * Get node identifier list from items
      *
      * @param ItemInterface[] $items
      *
      * @throws TypeMismatchError
-     *   In case one of the items has not the right type
+     *
+     * @return int[]
+     */
+    private function getNodeIdListFromItems(array $items) : array
+    {
+        return array_map(
+            function (ItemInterface $item) {
+                $id = $item->getId();
+                if (!is_numeric($id)) {
+                    throw new TypeMismatchError();
+                }
+                return $id;
+            },
+            $items
+        );
+    }
+
+    /**
+     * Get view mode from item
+     *
+     * @param ItemInterface $item
+     *
+     * @return string
+     */
+    private function getViewModeFromItem(ItemInterface $item) : string
+    {
+        $viewMode = $item->getStyle();
+
+        if (ItemInterface::STYLE_DEFAULT === $viewMode) {
+            $viewMode = 'teaser';
+        }
+
+        return $viewMode;
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function preload(array $items)
     {
-        throw new \Exception("not implemented yet");
+        if (!$items) {
+            return;
+        }
+
+        $this->entityManager->getStorage('node')->loadMultiple($this->getNodeIdListFromItems($items));
     }
 
     /**
-     * Render a single item
-     *
-     * @param ItemInterface $item
-     *   Item to render
-     * @param RenderCollection $collection
-     *   Already rendered items
-     *
-     * @return string
-     *   If the item is not renderable or invalid, return an empty string
-     *
-     * @throws TypeMismatchError
-     *   In case the item has not the right type
+     * {@inheritdoc}
      */
     public function renderItem(ItemInterface $item, RenderCollection $collection) : string
     {
-        throw new \Exception("not implemented yet");
+        $storage = $this->entityManager->getStorage('node');
+
+        if ($node = $storage->load($item->getId())) {
+            $output = node_view($node, $this->getViewModeFromItem($item));
+
+            return drupal_render($output);
+        }
+
+        return '';
     }
 
     /**
-     * Render an array of items
-     *
-     * @param ItemInterface[] $items
-     *   Items to render
-     * @param RenderCollection $collection
-     *   Already rendered items
-     *
-     * @return string[]
-     *   Array of render strings, keyed using item identifiers, invalid items
-     *   must be silently removed from the returned array, no errors
-     *
-     * @throws TypeMismatchError
-     *   In case one of the items has not the right type
+     * {@inheritdoc}
      */
     public function renderAllItems(array $items, RenderCollection $collection) : array
     {
-        throw new \Exception("not implemented yet");
+        $ret = [];
+
+        if (!$items) {
+            return $ret;
+        }
+
+        // Preload all nodes, we are going to need it
+        $preloaded = $this->entityManager->getStorage('node')->loadMultiple($this->getNodeIdListFromItems($items));
+
+        // First fetch all items using view modes
+        $sorted = [];
+        foreach ($items as $item) {
+            $id = $item->getId();
+            if (isset($preloaded[$id])) {
+                $sorted[$this->getViewModeFromItem($item)][$id] = $preloaded[$id];
+            }
+        }
+
+        // Bulk render using view modes
+        foreach ($sorted as $viewMode => $nodes) {
+            foreach (node_view_multiple($nodes, $viewMode)['nodes'] as $id => $output) {
+                $ret[$id] = drupal_render($output);
+            }
+        }
+
+        // @todo we should add missing nodes as empty strings
+
+        return $ret;
     }
 }
