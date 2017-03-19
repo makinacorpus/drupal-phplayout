@@ -202,6 +202,8 @@ class LayoutStorage implements LayoutStorageInterface
         }
 
         // Then load and populate their grid
+        // @todo mysql will always null first, but on postgresql we need to
+        //   set "nulls first" onto "parent_id asc nulls first".
         $items = $this
             ->database
             ->query(
