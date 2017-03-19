@@ -2,3 +2,28 @@
 /**
  * PHP Layout Drupal module hook definitions and module placeholder.
  */
+
+/**
+ * Implements hook_page_build().
+ */
+function phplayout_page_build(&$page) {
+  if ($node = menu_get_object()) {
+
+    // Fetch all layouts for the node
+    $layoutIdList = db_query("select id from {layout} where node_id = ? and region is not null", [$node->nid])->fetchCol();
+
+    if (!$layoutIdList) {
+      return;
+    }
+
+    /** @var \MakinaCorpus\Layout\Storage\LayoutStorageInterface $storage */
+    $storage = \Drupal::service('php_layout.storage');
+    /** @var \MakinaCorpus\Layout\Render\Renderer $renderer */
+    $renderer = \Drupal::service('php_layout.renderer');
+
+    /** @var \MakinaCorpus\Drupal\Layout\Storage\Layout $layout */
+    foreach ($storage->loadMultiple($layoutIdList) as $layout) {
+      $page[$layout->getRegion()][] = ['#markup' => $renderer->render($layout->getTopLevelContainer())];
+    }
+  }
+}
