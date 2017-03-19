@@ -7,6 +7,7 @@ use MakinaCorpus\Layout\Error\TypeMismatchError;
 use MakinaCorpus\Layout\Grid\ItemInterface;
 use MakinaCorpus\Layout\Render\RenderCollection;
 use MakinaCorpus\Layout\Type\ItemTypeInterface;
+use MakinaCorpus\Layout\Grid\Item;
 
 /**
  * Supports node as layout items
@@ -49,7 +50,7 @@ class NodeType implements ItemTypeInterface
      */
     public function create(string $id, string $style = null, array $options = []) : ItemInterface
     {
-        throw new \Exception("not implemented yet");
+        return new Item('node', $id, $style);
     }
 
     /**
@@ -146,8 +147,10 @@ class NodeType implements ItemTypeInterface
 
         // Bulk render using view modes
         foreach ($sorted as $viewMode => $nodes) {
-            foreach (node_view_multiple($nodes, $viewMode)['nodes'] as $id => $output) {
-                $ret[$id] = drupal_render($output);
+            $rendered = node_view_multiple($nodes, $viewMode)['nodes'];
+            // element_children() allows to drop #ish keys from the render array
+            foreach (element_children($rendered) as $id) {
+                $ret[$id] = drupal_render($rendered[$id]);
             }
         }
 
