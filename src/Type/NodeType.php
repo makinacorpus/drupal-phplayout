@@ -4,10 +4,10 @@ namespace MakinaCorpus\Drupal\Layout\Type;
 
 use Drupal\Core\Entity\EntityManager;
 use MakinaCorpus\Layout\Error\TypeMismatchError;
+use MakinaCorpus\Layout\Grid\Item;
 use MakinaCorpus\Layout\Grid\ItemInterface;
 use MakinaCorpus\Layout\Render\RenderCollection;
 use MakinaCorpus\Layout\Type\ItemTypeInterface;
-use MakinaCorpus\Layout\Grid\Item;
 
 /**
  * Supports node as layout items
@@ -109,28 +109,24 @@ class NodeType implements ItemTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function renderItem(ItemInterface $item, RenderCollection $collection) : string
+    public function renderItem(ItemInterface $item, RenderCollection $collection)
     {
         $storage = $this->entityManager->getStorage('node');
 
         if ($node = $storage->load($item->getId())) {
             $output = node_view($node, $this->getViewModeFromItem($item));
 
-            return drupal_render($output);
+            $collection->setOutputFor($item, drupal_render($output));
         }
-
-        return '';
     }
 
     /**
      * {@inheritdoc}
      */
-    public function renderAllItems(array $items, RenderCollection $collection) : array
+    public function renderAllItems(array $items, RenderCollection $collection)
     {
-        $ret = [];
-
         if (!$items) {
-            return $ret;
+            return;
         }
 
         // Preload all nodes, we are going to need it
@@ -150,12 +146,13 @@ class NodeType implements ItemTypeInterface
             $rendered = node_view_multiple($nodes, $viewMode)['nodes'];
             // element_children() allows to drop #ish keys from the render array
             foreach (element_children($rendered) as $id) {
-                $ret[$id] = drupal_render($rendered[$id]);
+                $output = drupal_render($rendered[$id]);
+
+                $collection->setOutputWith('node', $id, $viewMode, $output);
+                if ('teaser' === $viewMode) {
+                    $collection->setOutputWith('node', $id, ItemInterface::STYLE_DEFAULT, $output);
+                }
             }
         }
-
-        // @todo we should add missing nodes as empty strings
-
-        return $ret;
     }
 }

@@ -20,10 +20,20 @@ function phplayout_page_build(&$page) {
     $storage = \Drupal::service('php_layout.storage');
     /** @var \MakinaCorpus\Layout\Render\Renderer $renderer */
     $renderer = \Drupal::service('php_layout.renderer');
-
     /** @var \MakinaCorpus\Drupal\Layout\Storage\Layout $layout */
+
+    // Attempt with single pass
+//     $containers = [];
+//     foreach ($storage->loadMultiple($layoutIdList) as $layout) {
+//       $containers[$layout->getRegion()] = $layout->getTopLevelContainer();
+//     }
+//     foreach ($renderer->renderAll($containers) as $region => $output) {
+//       $page[$region]['layout'] = ['#markup' => $output];
+//     }
+
+    // Working multiple pass version
     foreach ($storage->loadMultiple($layoutIdList) as $layout) {
-      $page[$layout->getRegion()][] = ['#markup' => $renderer->render($layout->getTopLevelContainer())];
+      // $page[$layout->getRegion()]['layout'] = ['#markup' => $renderer->render($layout->getTopLevelContainer())];
     }
   }
 }
