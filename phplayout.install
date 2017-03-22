@@ -4,7 +4,7 @@
  * Implements hook_schema().
  */
 function phplayout_schema() {
-  $schema = [
+  return [
 
     'layout' => [
       'description' => "Layouts",
@@ -114,12 +114,56 @@ function phplayout_schema() {
         ],
       ],
     ],
+
+    'layout_token' => [
+      'description' => "Layout temporary edit tokens",
+      'fields' => [
+        'token' => [
+          'description' => "Primary key",
+          'type'        => 'varchar',
+          'length'      => 255,
+          'not null'    => true,
+        ],
+        'data' => [
+          'description' => "Serialized data",
+          'type'        => 'blob',
+          'not null'    => true,
+        ],
+      ],
+      'primary key' => ['token'],
+    ],
+
+    'layout_token_layout' => [
+      'description' => "Temporary layouts",
+      'fields' => [
+        'token' => [
+          'description' => "Token this layout belongs to",
+          'type'        => 'varchar',
+          'length'      => 255,
+          'not null'    => true,
+        ],
+        'layout_id' => [
+          'description' => "Parent container in this layout",
+          'type'        => 'int',
+          'not null'    => true,
+        ],
+        'data' => [
+          'description' => "Serialized data",
+          'type'        => 'blob',
+          'not null'    => true,
+        ],
+      ],
+      'primary key' => ['token', 'layout_id'],
+      'foreign keys' => [
+        'layout_id' => [
+          'table'   => 'layout_token',
+          'columns' => ['token' => 'token'],
+          'delete'  => 'cascade',
+        ],
+      ],
+
+    ],
   ];
-
-  $schema['cache_layout'] = drupal_get_schema_unprocessed('system', 'cache');
-  $schema['cache_layout']['description'] = 'Cache table for the Field module to store already built field information.';
-
-  return $schema;
 }
 
 /**
@@ -169,10 +213,14 @@ function phplayout_modules_enabled($modules) {
 }
 
 /**
- * Installs the 'cache_layout' table.
+ * Installs the {layout_token} and {layout_token_layout} tables.
  */
-function phplayout_update_7001() {
-  if (!db_table_exists('cache_layout')) {
-    db_create_table('cache_layout', drupal_get_schema_unprocessed('phplayout', 'cache_layout'));
+function phplayout_update_7002() {
+  if (!db_table_exists('layout_token')) {
+    db_create_table('layout_token', drupal_get_schema_unprocessed('phplayout', 'layout_token'));
   }
+  if (!db_table_exists('layout_token_layout')) {
+    db_create_table('layout_token_layout', drupal_get_schema_unprocessed('phplayout', 'layout_token_layout'));
+  }
+  db_constraint_fix('phplayout');
 }

@@ -3,72 +3,74 @@
 namespace MakinaCorpus\Drupal\Layout\Tests;
 
 use MakinaCorpus\Drupal\Layout\Storage\Layout;
-use MakinaCorpus\Layout\Error\GenericError;
+use MakinaCorpus\Layout\Controller\EditToken;
+use MakinaCorpus\Layout\Error\InvalidTokenError;
 use MakinaCorpus\Layout\Grid\HorizontalContainer;
-use MakinaCorpus\Layout\Grid\VerticalContainer;
 use MakinaCorpus\Layout\Storage\LayoutInterface;
 use MakinaCorpus\Layout\Tests\Unit\Render\XmlGridRenderer;
 
 /**
- * Test storage basics
+ * Test token storage basics
  *
  * WARNING: this test will break your database into pieces.
  */
-class StorageTest extends AbstractLayoutTest
+class TokenStorageTest extends AbstractLayoutTest
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function setUp()
-    {
-        parent::setUp();
-
-        $database = $this->getDatabaseConnection();
-        $database->query("delete from {layout} where node_id in (137)");
-    }
-
     /**
      * Test storage creation
      */
     public function testCreateAndLoad()
     {
+        $context = $this->createPageContext();
         $storage = $this->createStorage();
+        $tokenStorage = $this->createTokenStorage();
 
         /** @var \MakinaCorpus\Drupal\Layout\Storage\Layout $layout */
-        $layout = $storage->create();
-        $this->assertInstanceOf(Layout::class, $layout);
-        $this->assertNotEmpty($layout->getId());
+        $layout1 = $storage->create();
+        $layout2 = $storage->create();
 
-        // Default values are all null
-        $this->assertNull($layout->getNodeId());
-        $this->assertNull($layout->getSiteId());
-        $this->assertNull($layout->getRegion());
+        $context->add([$layout1], true);
+        $context->add([$layout2], false);
+        $token = $context->createEditToken(['user_id' => 17]);
 
-        // We must always have a top level container
-        $container = $layout->getTopLevelContainer();
-        $this->assertInstanceOf(VerticalContainer::class, $container);
-        $this->assertSame('layout-' . $layout->getId(), $container->getId());
+        // Should not exist before save
+        try {
+            $tokenStorage->loadToken($token->getToken());
+            $this->fail();
+        } catch (InvalidTokenError $e) {
+            $this->assertTrue(true);
+        }
 
-        // Load it
-        $otherLayout = $storage->load($layout->getId());
-        $this->assertNotSame($layout, $otherLayout);
-        $this->assertSame($layout->getId(), $otherLayout->getId());
-        $otherContainer = $otherLayout->getTopLevelContainer();
-        $this->assertInstanceOf(VerticalContainer::class, $otherContainer);
-        $this->assertSame('layout-' . $otherLayout->getId(), $otherContainer->getId());
+        $tokenStorage->saveToken($token);
+
+        // Later on...
+        $newToken = $tokenStorage->loadToken($token->getToken());
+        $this->assertInstanceOf(EditToken::class, $newToken);
+        $this->assertSame($token->getToken(), $newToken->getToken());
+        $this->assertTrue($newToken->contains($layout1));
+        $this->assertFalse($newToken->contains($layout2));
     }
 
     /**
-     * Attempt a non existing layout load
+     * Load multiple load everything with no side effects
      */
-    public function testLoadThrowsExceptions()
+    public function testLoadLayoutEmpty()
     {
+        $context = $this->createPageContext();
+        $tokenStorage = $this->createTokenStorage();
+        $token = $context->createEditToken(['user_id' => 17]);
+        $tokenString = $token->getToken();
+
+        // Seems stupid, but actually we can load nothing
+        $tokenStorage->saveToken($token);
+        $ret = $tokenStorage->loadMultiple($tokenString, []);
+        $this->assertEmpty($ret);
+
+        // But still should failed when token does not exists
         try {
-            // -1 is not an invalid value, but I'm sure no layouts will ever
-            // have this identifier
-            $this->createStorage()->load(-1);
+            $tokenStorage->loadMultiple('some_non_existing_arbitrary_token', []);
             $this->fail();
-        } catch (GenericError $e) {
+        } catch (InvalidTokenError $e) {
             $this->assertTrue(true);
         }
     }
@@ -76,158 +78,55 @@ class StorageTest extends AbstractLayoutTest
     /**
      * Load multiple load everything with no side effects
      */
-    public function testLoadMultipleAllOK()
+    public function testLoadLayoutAll()
     {
+        $context = $this->createPageContext();
         $storage = $this->createStorage();
+        $tokenStorage = $this->createTokenStorage();
 
         $layout1 = $storage->create();
         $layout2 = $storage->create();
         $layout3 = $storage->create();
 
-        $ret = $storage->loadMultiple([]);
-        $this->assertCount(0, $ret);
+        $context->add([$layout1, $layout3], true);
+        $context->add([$layout2], false);
+        $token = $context->createEditToken(['user_id' => 17]);
+        $tokenString = $token->getToken();
+        $tokenStorage->saveToken($token);
 
-        $ret = $storage->loadMultiple([
-            $layout1->getId(),
-            $layout3->getId(),
-        ]);
+        // Save our editable instances
+        $tokenStorage->update($tokenString, $layout1);
+        $tokenStorage->update($tokenString, $layout3);
 
-        $this->assertCount(2, $ret);
-        $this->assertSame($layout1->getId(), $ret[$layout1->getId()]->getId());
-        $this->assertSame($layout3->getId(), $ret[$layout3->getId()]->getId());
+        // Test load single works
+        $newLayout1 = $tokenStorage->load($tokenString, $layout1->getId());
+        $this->assertSame($layout1->getId(), $newLayout1->getId());
 
-        $this->createAwesomelyComplexLayout($layout2);
-        $this->createAwesomelyComplexLayout($layout3);
-        $storage->update($layout2);
-        $storage->update($layout3);
-
-        $ret = $storage->loadMultiple([
-            $layout2->getId(),
-            $layout3->getId(),
-        ]);
-
-        $this->assertFalse($ret[$layout2->getId()]->getTopLevelContainer()->isEmpty());
-        $this->assertFalse($ret[$layout3->getId()]->getTopLevelContainer()->isEmpty());
-    }
-
-    /**
-     * Load multiple downgrades when there are missing layouts
-     */
-    public function testLoadMultipleAllSomeDontExist()
-    {
-        $storage = $this->createStorage();
-
-        $layout1 = $storage->create();
-
-        $ret = $storage->loadMultiple([
-            $layout1->getId(),
-            $layout1->getId() + 1,
-        ]);
-
-        $this->assertCount(1, $ret);
-        $this->assertSame($layout1->getId(), $ret[$layout1->getId()]->getId());
-    }
-
-    /**
-     * Tests load with conditions
-     */
-    public function testLoadWithCondition()
-    {
-        // Force full bootstrap (else node_save() cannot work)
-        $this->getDrupalContainer();
-
-        // This test will break you data
-        $this
-            ->getDatabaseConnection()
-            ->query("delete from {layout} where site_id = 666 or site_id = 999 or node_id is null")
-        ;
-
-        $storage = $this->createStorage();
-
-        // Basic use cases, unknown column or no condition
+        // Load single will raise exceptions
         try {
-            $storage->listWithConditions([]);
+            $tokenStorage->load($tokenString, $layout2->getId());
             $this->fail();
-        } catch (GenericError $e) {
-            $this->assertTrue(true);
-        }
-        try {
-            $storage->listWithConditions(['foo' => 1]);
-            $this->fail();
-        } catch (GenericError $e) {
+        } catch (InvalidTokenError $e) {
             $this->assertTrue(true);
         }
 
-        // We need to create nodes first
-        $node1 = $this->node[] = new \stdClass();
-        $node1->type = 'page';
-        node_save($node1);
-        $node2 = $this->node[] = new \stdClass();
-        $node2->type = 'page';
-        node_save($node2);
+        // Test load multiple works
+        $others = $tokenStorage->loadMultiple($token->getToken(), [$layout1->getId(), $layout3->getId()]);
+        $this->assertCount(2, $others);
 
-        $layout1 = $storage->create([
-            'node_id' => $node1->nid,
-        ]);
-        $layout2 = $storage->create([
-            'node_id' => $node2->nid,
-            'site_id' => 999,
-        ]);
-        $layout3 = $storage->create([
-            'site_id' => 666,
-        ]);
-        $layout4 = $storage->create();
-        $layout5 = $storage->create();
-        $layout6 = $storage->create([
-            'site_id' => 666,
-            'region'  => 'foo',
-        ]);
-        $layout7 = $storage->create([
-            'node_id' => $node1->nid,
-            'site_id' => 999,
-        ]);
-
-        $idList = $storage->listWithConditions(['node_id' => 137]);
-        $this->assertCount(0, $idList);
-
-        $idList = $storage->listWithConditions(['site_id' => 666]);
-        $this->assertCount(2, $idList);
-        $this->assertContains($layout3->getId(), $idList);
-        $this->assertContains($layout6->getId(), $idList);
-
-        $idList = $storage->listWithConditions(['node_id' => $node1->nid]);
-        $this->assertCount(2, $idList);
-        $this->assertContains($layout1->getId(), $idList);
-        $this->assertContains($layout7->getId(), $idList);
-
-        $idList = $storage->listWithConditions(['node_id' => $node1->nid, 'site_id' => null]);
-        $this->assertCount(1, $idList);
-        $this->assertContains($layout1->getId(), $idList);
-
-        $idList = $storage->listWithConditions(['node_id' => null, 'site_id' => null]);
-        $this->assertCount(2, $idList);
-        $this->assertContains($layout4->getId(), $idList);
-        $this->assertContains($layout5->getId(), $idList);
-
-        $idList = $storage->listWithConditions(['node_id' => $node2->nid, 'site_id' => 999]);
-        $this->assertCount(1, $idList);
-        $this->assertContains($layout2->getId(), $idList);
-
-        $idList = $storage->listWithConditions(['region' => 'foo']);
-        $this->assertCount(1, $idList);
-        $this->assertContains($layout6->getId(), $idList);
-    }
-
-    /**
-     * Exists method works
-     */
-    public function testExists()
-    {
-        $storage = $this->createStorage();
-        $this->assertFalse($storage->exists(-1));
-
-        $layout1 = $storage->create();
-        $this->assertTrue($storage->exists($layout1->getId()));
+        // Load multiple will raise exceptions
+        try {
+            $tokenStorage->loadMultiple($tokenString, [$layout2->getId()]);
+            $this->fail();
+        } catch (InvalidTokenError $e) {
+            $this->assertTrue(true);
+        }
+        try {
+            $tokenStorage->loadMultiple($tokenString, [$layout3->getId(), $layout2->getId()]);
+            $this->fail();
+        } catch (InvalidTokenError $e) {
+            $this->assertTrue(true);
+        }
     }
 
     /**
@@ -235,19 +134,49 @@ class StorageTest extends AbstractLayoutTest
      */
     public function testDelete()
     {
+        $context = $this->createPageContext();
         $storage = $this->createStorage();
+        $tokenStorage = $this->createTokenStorage();
 
         $layout1 = $storage->create();
-        $this->createAwesomelyComplexLayout($layout1);
-        $storage->update($layout1);
+        $layout2 = $storage->create();
+        $layout3 = $storage->create();
 
-        $storage->delete($layout1->getId());
+        $context->add([$layout1, $layout3], true);
+        $context->add([$layout2], false);
+        $token = $context->createEditToken(['user_id' => 17]);
+        $tokenString = $token->getToken();
+        $tokenStorage->saveToken($token);
 
-        $database = $this->getDatabaseConnection();
-        $countLayout = (bool)$database->query("select 1 from {layout} where id = ?", [$layout1->getId()])->fetchField();
-        $this->assertFalse($countLayout);
-        $countItems = (bool)$database->query("select 1 from {layout_data} where layout_id = ?", [$layout1->getId()])->fetchField();
-        $this->assertFalse($countItems);
+        // Save our editable instances
+        $tokenStorage->update($tokenString, $layout1);
+        $tokenStorage->update($tokenString, $layout3);
+
+        // Validate that load still work
+        $tokenStorage->loadToken($tokenString);
+        $tokenStorage->loadMultiple($tokenString, [$layout1->getId(), $layout3->getId()]);
+
+        // And now delete
+        $tokenStorage->deleteAll($tokenString);
+
+        try {
+            $tokenStorage->loadToken($tokenString);
+            $this->fail();
+        } catch (InvalidTokenError $e) {
+            $this->assertTrue(true);
+        }
+        try {
+            $tokenStorage->loadMultiple($tokenString, [$layout1->getId()]);
+            $this->fail();
+        } catch (InvalidTokenError $e) {
+            $this->assertTrue(true);
+        }
+        try {
+            $tokenStorage->load($tokenString, $layout3->getId());
+            $this->fail();
+        } catch (InvalidTokenError $e) {
+            $this->assertTrue(true);
+        }
     }
 
     /**

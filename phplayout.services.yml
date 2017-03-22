@@ -7,24 +7,13 @@ services:
     public: false
     class: MakinaCorpus\Layout\Render\DefaultIdentifierStrategy
 
-  php_layout.renderer:
-    class: MakinaCorpus\Layout\Render\Renderer
-    arguments: ['@php_layout.type_registry', '@php_layout.identifier_strategy']
-
   php_layout.grid_renderer:
+    public: false
     class: MakinaCorpus\Layout\Render\BootstrapGridRenderer
 
-  php_layout.renderer.hbox:
-    public: false
-    class: MakinaCorpus\Layout\Type\HorizontalContainerType
-    arguments: ['@php_layout.grid_renderer']
-    tags: [{name: php_layout.type}]
-
-  php_layout.type.vbox:
-    public: false
-    class: MakinaCorpus\Layout\Type\VerticalContainerType
-    arguments: ['@php_layout.grid_renderer']
-    tags: [{name: php_layout.type}]
+  php_layout.renderer:
+    class: MakinaCorpus\Layout\Render\Renderer
+    arguments: ['@php_layout.type_registry', '@php_layout.grid_renderer', '@php_layout.identifier_strategy']
 
   php_layout.type.drupal_node:
     public: false

@@ -15,9 +15,12 @@ class ItemTypeRegisterPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container)
     {
+        // @codeCoverageIgnoreStart
         if (!$container->hasDefinition('php_layout.type_registry')) {
             return;
         }
+        // @codeCoverageIgnoreEnd
+
         $definition = $container->getDefinition('php_layout.type_registry');
 
         // Register custom action providers
@@ -28,9 +31,11 @@ class ItemTypeRegisterPass implements CompilerPassInterface
             $class = $container->getParameterBag()->resolveValue($def->getClass());
             $refClass = new \ReflectionClass($class);
 
+            // @codeCoverageIgnoreStart
             if (!$refClass->implementsInterface(ItemTypeInterface::class)) {
                 throw new \InvalidArgumentException(sprintf('Service "%s" must implement interface "%s".', $id, ItemTypeInterface::class));
             }
+            // @codeCoverageIgnoreEnd
 
             $definition->addMethodCall('registerType', [new Reference($id)]);
         }

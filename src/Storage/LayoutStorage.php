@@ -40,6 +40,31 @@ class LayoutStorage implements LayoutStorageInterface
     }
 
     /**
+     * Create instance from database row
+     *
+     * @param \stdClass $item
+     *   Item from database
+     * @param array $options
+     *   Arbitrary item options
+     *
+     * @return ItemInterface
+     */
+    private function populateLayoutCreateInstance(\stdClass $item, array $options) : ItemInterface
+    {
+        switch ($item->item_type) {
+
+            case HorizontalContainer::HORIZONTAL_CONTAINER:
+                return new HorizontalContainer($item->item_id);
+
+            case VerticalContainer::VERTICAL_CONTAINER:
+                return new VerticalContainer($item->item_id);
+
+            default:
+                return $this->typeRegistry->getType($item->item_type)->create($item->item_id, $item->style, $options);
+        }
+    }
+
+    /**
      * Populate a single layout grid
      *
      * @param Layout $layout
@@ -81,7 +106,8 @@ class LayoutStorage implements LayoutStorageInterface
                     $instance = $parent->createColumnAt($item->position, $item->item_id);
                     $instance->setStorageId($item->id);
                 } else {
-                    $instance = $this->typeRegistry->getType($item->item_type)->create($item->item_id, $item->style, $options);
+
+                    $instance = $this->populateLayoutCreateInstance($item, $options);
                     $instance->setStorageId($item->id);
 
                     if ($parent instanceof ColumnContainer) {
@@ -93,7 +119,7 @@ class LayoutStorage implements LayoutStorageInterface
                     }
                 }
             } else {
-                $instance = $this->typeRegistry->getType($item->item_type)->create($item->item_id, $item->style, $options);
+                $instance = $this->populateLayoutCreateInstance($item, $options);
                 $instance->setStorageId($item->id);
                 $toplevel->addAt($instance, $item->position);
             }
@@ -163,6 +189,56 @@ class LayoutStorage implements LayoutStorageInterface
             ->query("select 1 from layout where id = ?", [$id])
             ->fetchField()
         ;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function listWithConditions(array $conditions) : array
+    {
+        $query = $this
+            ->database
+            ->select('layout', 'l')
+            ->fields('l', ['id'])
+        ;
+
+        if (!$conditions) {
+            throw new GenericError("querying layouts with no conditions is stupid");
+        }
+
+        foreach ($conditions as $key => $value) {
+            switch ($key) {
+
+                case 'node_id':
+                    if (null === $value || '' === $value) {
+                        $query->isNull('l.node_id');
+                    } else {
+                        $query->condition('l.node_id', $value);
+                    }
+                    break;
+
+                case 'site_id':
+                    if (null === $value || '' === $value) {
+                        $query->isNull('l.site_id');
+                    } else {
+                        $query->condition('l.site_id', $value);
+                    }
+                    break;
+
+                case 'region':
+                    if (null === $value || '' === $value) {
+                        $query->isNull('l.region');
+                    } else {
+                        $query->condition('l.region', $value);
+                    }
+                    break;
+
+                default:
+                    throw new GenericError(sprintf("querying layouts with column '%s' is not possible", $key));
+            }
+        }
+
+        return $query->execute()->fetchCol();
     }
 
     /**
@@ -360,12 +436,34 @@ class LayoutStorage implements LayoutStorageInterface
     /**
      * {@inheritdoc}
      */
-    public function create() : LayoutInterface
+    public function create(array $values = []) : LayoutInterface
     {
-        $id = (int)$this
-            ->database
-            ->query("insert into layout () values ()", [], ['return' => \Database::RETURN_INSERT_ID])
-        ;
+        foreach (array_keys($values) as $key) {
+            switch ($key) {
+
+                case 'node_id':
+                case 'site_id':
+                case 'region':
+                    break;
+
+                default:
+                    throw new GenericError(sprintf("inserting layouts with column '%s' is not possible", $key));
+            }
+        }
+
+        if ($values) {
+            $id = (int)$this
+                ->database
+                ->insert('layout')
+                ->fields($values)
+                ->execute()
+            ;
+        } else {
+            $id = (int)$this
+                ->database
+                ->query("insert into layout () values ()", [], ['return' => \Database::RETURN_INSERT_ID])
+            ;
+        }
 
         return $this->load($id);
     }

@@ -2,13 +2,13 @@
 
 namespace MakinaCorpus\Drupal\Layout\Storage;
 
-use MakinaCorpus\Layout\Storage\LayoutInterface;
 use MakinaCorpus\Layout\Grid\VerticalContainer;
+use MakinaCorpus\Layout\Storage\AbstractLayout;
 
 /**
  * Default layout instances
  */
-class Layout implements LayoutInterface
+class Layout extends AbstractLayout
 {
     private $id;
     private $nodeId;
