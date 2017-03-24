@@ -3,7 +3,6 @@
 namespace MakinaCorpus\Drupal\Layout\Tests;
 
 use Drupal\node\NodeInterface;
-use MakinaCorpus\Drupal\Layout\Context\ContextManager;
 use MakinaCorpus\Drupal\Layout\Storage\Layout;
 use MakinaCorpus\Drupal\Layout\Storage\LayoutStorage;
 use MakinaCorpus\Drupal\Layout\Storage\TokenLayoutStorage;
@@ -59,10 +58,7 @@ abstract class AbstractLayoutTest extends AbstractDrupalTest
      */
     protected function createPageContext() : Context
     {
-        $context = new Context();
-        $context->setTokenGenerator(new DefaultTokenGenerator());
-
-        return $context;
+        return new Context($this->createStorage(), $this->createTokenStorage(), new DefaultTokenGenerator());
     }
 
     /**
@@ -83,15 +79,5 @@ abstract class AbstractLayoutTest extends AbstractDrupalTest
     protected function createTokenStorage() : TokenLayoutStorageInterface
     {
         return new TokenLayoutStorage($this->getDatabaseConnection());
-    }
-
-    /**
-     * Creates the tested storage instance
-     *
-     * @return ContextManager
-     */
-    protected function createContextManager() : ContextManager
-    {
-        return new ContextManager($this->createStorage(), $this->createTokenStorage());
     }
 }
