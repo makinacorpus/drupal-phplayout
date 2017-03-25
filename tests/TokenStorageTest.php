@@ -33,16 +33,6 @@ class TokenStorageTest extends AbstractLayoutTest
         $context->add([$layout2], false);
         $token = $context->createEditToken(['user_id' => 17]);
 
-        // Should not exist before save
-        try {
-            $tokenStorage->loadToken($token->getToken());
-            $this->fail();
-        } catch (InvalidTokenError $e) {
-            $this->assertTrue(true);
-        }
-
-        $tokenStorage->saveToken($token);
-
         // Later on...
         $newToken = $tokenStorage->loadToken($token->getToken());
         $this->assertInstanceOf(EditToken::class, $newToken);
