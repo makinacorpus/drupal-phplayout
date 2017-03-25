@@ -78,6 +78,7 @@ class LayoutStorage implements LayoutStorageInterface
         // of items.
         $loaded = [];
         $toplevel = $layout->getTopLevelContainer();
+        $layoutId = $layout->getId();
 
         foreach ($items as $item) {
             $instance = null;
@@ -104,11 +105,11 @@ class LayoutStorage implements LayoutStorageInterface
 
                 if ($parent instanceof HorizontalContainer) {
                     $instance = $parent->createColumnAt($item->position, $item->item_id);
-                    $instance->setStorageId($item->id);
+                    $instance->setStorageId($layoutId, $item->id);
                 } else {
 
                     $instance = $this->populateLayoutCreateInstance($item, $options);
-                    $instance->setStorageId($item->id);
+                    $instance->setStorageId($layoutId, $item->id);
 
                     if ($parent instanceof ColumnContainer) {
                         $parent->addAt($instance, $item->position);
@@ -120,7 +121,7 @@ class LayoutStorage implements LayoutStorageInterface
                 }
             } else {
                 $instance = $this->populateLayoutCreateInstance($item, $options);
-                $instance->setStorageId($item->id);
+                $instance->setStorageId($layoutId, $item->id);
                 $toplevel->addAt($instance, $item->position);
             }
 
@@ -371,7 +372,7 @@ class LayoutStorage implements LayoutStorageInterface
                     ->execute()
                 ;
 
-                $item->setStorageId($id);
+                $item->setStorageId($layoutId, $id);
             }
         }
 
