@@ -29,8 +29,6 @@ class LayoutContextEditForm extends FormBase
      * Default constructor
      *
      * @param Context $context
-     * @param LayoutStorage $storage
-     * @param TokenLayoutStorageInterface $tokenStorage
      */
     public function __construct(Context $context)
     {

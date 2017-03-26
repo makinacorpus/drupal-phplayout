@@ -10,7 +10,8 @@ services:
 
   php_layout.grid_renderer:
     public: false
-    class: MakinaCorpus\Layout\Render\BootstrapGridRenderer
+    class: MakinaCorpus\Drupal\Layout\Render\EditLinksRendererDecorator
+    arguments: ['@php_layout.context']
 
   php_layout.renderer:
     class: MakinaCorpus\Layout\Render\Renderer

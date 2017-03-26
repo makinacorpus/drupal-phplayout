@@ -65,6 +65,7 @@ class Layout extends AbstractLayout
     {
         if (!$this->container) {
             $this->container = new VerticalContainer('layout-' . $this->id);
+            $this->container->setStorageId($this->id, 0);
         }
 
         return $this->container;

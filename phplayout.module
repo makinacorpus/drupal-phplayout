@@ -3,14 +3,115 @@
  * PHP Layout Drupal module hook definitions and module placeholder.
  */
 
+use MakinaCorpus\Drupal\Layout\Controller\LayoutController;
 use MakinaCorpus\Drupal\Layout\Form\LayoutContextEditForm;
 use MakinaCorpus\Drupal\Layout\Storage\Layout;
+use MakinaCorpus\Drupal\Layout\Storage\LayoutStorage;
 use MakinaCorpus\Layout\Error\InvalidTokenError;
+use MakinaCorpus\Layout\Grid\HorizontalContainer;
+use MakinaCorpus\Layout\Grid\Item;
+use MakinaCorpus\Layout\Storage\LayoutStorageInterface;
 
 /**
  * Layout edit token get parameter name
  */
 const PHP_LAYOUT_TOKEN_PARAMETER = 'layout-edit';
+
+/**
+ * Implements hook_menu().
+ */
+function phplayout_menu() {
+  $items = [];
+
+  $items['layout/ajax/add-column'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => [LayoutController::class . '::addColumn'],
+  ];
+  $items['layout/ajax/add-column-container'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => [LayoutController::class . '::addColumnContainer'],
+  ];
+  $items['layout/ajax/add-item'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => [LayoutController::class . '::add'],
+  ];
+  $items['layout/ajax/remove-column'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => [LayoutController::class . '::removeColumn'],
+  ];
+  $items['layout/ajax/remove'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => [LayoutController::class . '::remove'],
+  ];
+
+  return $items;
+}
+
+/**
+ * Creates a sample layout
+ */
+function _phplayout_create_sample_layout(LayoutStorage $storage, Layout $layout) {
+
+  // Place a top level container and build layout (no items)
+  $topLevel = $layout->getTopLevelContainer();
+  $c1 = new HorizontalContainer('C1');
+  $topLevel->append($c1);
+  $c11 = $c1->appendColumn('C11');
+  $c12 = $c1->appendColumn('C12');
+  $c2 = new HorizontalContainer('C2');
+  $c12->append($c2);
+  $c21 = $c2->appendColumn('C21');
+  $c22 = $c2->appendColumn('C22');
+  $c3 = new HorizontalContainer('C3');
+  $topLevel->append($c3);
+  $c31 = $c3->appendColumn('C31');
+  $c32 = $c3->appendColumn('C32');
+  $c33 = $c3->appendColumn('C33');
+
+  $nidList = db_query("SELECT nid FROM {node}")->fetchCol();
+  $nidIndex = 0;
+  $modeList = ['full', 'teaser'];
+  $modeIndex = 0;
+
+  // Now place all items
+  $a1_1 = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $a1_2 = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $a2   = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $b3   = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $b4   = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $a5   = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $a6   = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $b7_1 = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $b7_2 = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $b8   = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $a9   = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $b10  = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $b11  = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+  $a12  = new Item('node', $nidList[($nidIndex++) % count($nidList)], $modeList[($modeIndex++) % count($modeList)]);
+
+  $c11->append($a1_1);
+  $c11->append($b4);
+
+  $c21->append($a2);
+  $c21->append($a5);
+
+  $c22->append($b3);
+
+  $c31->append($a6);
+  $c31->append($a9);
+
+  $c32->append($b7_1);
+  $c32->append($b10);
+
+  $c33->append($b8);
+  $c33->append($b11);
+  $c33->append($a1_2);
+
+  $topLevel->append($a12);
+  $topLevel->append($b7_2);
+
+  $storage->update($layout);
+}
 
 /**
  * Implements hook_page_build().
@@ -26,14 +127,6 @@ function phplayout_page_build(&$page) {
     // Fetch all layouts for the node
     $layoutIdList = db_query("select id from {layout} where node_id = ?", [$node->nid])->fetchCol();
 
-    if (isset($_GET[PHP_LAYOUT_TOKEN_PARAMETER])) {
-      try {
-        $context->setCurrentToken($_GET[PHP_LAYOUT_TOKEN_PARAMETER]);
-      } catch (InvalidTokenError $e) {
-        // Fallback on non-edit mode
-      }
-    }
-
     if ($layoutIdList) {
       $layouts = $storage->loadMultiple($layoutIdList);
     } else {
@@ -43,17 +136,36 @@ function phplayout_page_build(&$page) {
 
     $context->add($layouts, true /* @todo access checks on each layout */);
 
+    // Load the token after we did loaded all the layouts, to ensure that
+    // their temporary equivalents attached to the token will be reloaded
+    // instead.
+    if (isset($_GET[PHP_LAYOUT_TOKEN_PARAMETER])) {
+      try {
+        $context->setCurrentToken($_GET[PHP_LAYOUT_TOKEN_PARAMETER]);
+      } catch (InvalidTokenError $e) {
+        // Fallback on non-edit mode
+      }
+    }
+
     /** @var \MakinaCorpus\Layout\Render\Renderer $renderer */
     $renderer = \Drupal::service('php_layout.renderer');
 
     // Working multiple pass version
     foreach ($context->getAll() as $layout) {
+      // _phplayout_create_sample_layout($storage, $layout);
       if (!$layout instanceof Layout || !($region = $layout->getRegion())) {
         $region = 'content';
       }
       $page[$region]['layout'][$layout->getId()] = ['#markup' => $renderer->render($layout->getTopLevelContainer())];
     }
-  }
 
-  $page['content']['layout_edit_form'] = \Drupal::formBuilder()->getForm(LayoutContextEditForm::class);
+    if ($context->hasToken()) {
+      $path = drupal_get_path('module', 'phplayout');
+      drupal_add_css($path . '/public/edit.css');
+      drupal_add_js($path . '/public/edit.js');
+    }
+
+    $page['content']['layout_edit_form'] = \Drupal::formBuilder()->getForm(LayoutContextEditForm::class);
+    $page['content']['layout_edit_form']['#weight'] = -1000;
+  }
 }
