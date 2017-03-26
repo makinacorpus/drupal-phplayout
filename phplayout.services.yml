@@ -1,5 +1,9 @@
 services:
 
+  #
+  # Generic PHP-Layout API configuration
+  #
+
   php_layout.type_registry:
     public: false
     class: MakinaCorpus\Layout\Type\ItemTypeRegistry
@@ -8,20 +12,26 @@ services:
     public: false
     class: MakinaCorpus\Layout\Render\StorageIdentifierStrategy
 
-  php_layout.grid_renderer:
-    public: false
-    class: MakinaCorpus\Drupal\Layout\Render\EditLinksRendererDecorator
-    arguments: ['@php_layout.context']
-
   php_layout.renderer:
     class: MakinaCorpus\Layout\Render\Renderer
     arguments: ['@php_layout.type_registry', '@php_layout.grid_renderer', '@php_layout.identifier_strategy']
 
-  php_layout.type.drupal_node:
+  php_layout.token_generator:
     public: false
-    class: MakinaCorpus\Drupal\Layout\Type\NodeType
-    arguments: ['@entity.manager']
-    tags: [{name: php_layout.type}]
+    class: MakinaCorpus\Layout\Controller\DefaultTokenGenerator
+
+  php_layout.context:
+    class: MakinaCorpus\Layout\Controller\Context
+    arguments: ['@php_layout.storage', '@php_layout.token_storage', '@php_layout.token_generator']
+
+  php_layout.edit_controller:
+    public: false
+    class: MakinaCorpus\Layout\Controller\EditController
+    arguments: ['@php_layout.token_storage', '@php_layout.type_registry', '@php_layout.renderer']
+
+  #
+  # Drupal specific or overriden components
+  #
 
   php_layout.storage:
     class: MakinaCorpus\Drupal\Layout\Storage\LayoutStorage
@@ -31,10 +41,17 @@ services:
     class: MakinaCorpus\Drupal\Layout\Storage\TokenLayoutStorage
     arguments: ['@database']
 
-  php_layout.token_generator:
+  php_layout.grid_renderer:
     public: false
-    class: MakinaCorpus\Layout\Controller\DefaultTokenGenerator
+    class: MakinaCorpus\Drupal\Layout\Render\EditLinksRendererDecorator
+    arguments: ['@php_layout.context']
 
-  php_layout.context:
-    class: MakinaCorpus\Layout\Controller\Context
-    arguments: ['@php_layout.storage', '@php_layout.token_storage', '@php_layout.token_generator']
+  php_layout.type.drupal_node:
+    public: false
+    class: MakinaCorpus\Drupal\Layout\Type\NodeType
+    arguments: ['@entity.manager']
+    tags: [{name: php_layout.type}]
+
+  php_layout.drupal_layout_controller:
+    class: MakinaCorpus\Drupal\Layout\Controller\LayoutController
+    arguments: ['@php_layout.edit_controller']

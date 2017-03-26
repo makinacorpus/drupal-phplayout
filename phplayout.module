@@ -3,7 +3,6 @@
  * PHP Layout Drupal module hook definitions and module placeholder.
  */
 
-use MakinaCorpus\Drupal\Layout\Controller\LayoutController;
 use MakinaCorpus\Drupal\Layout\Form\LayoutContextEditForm;
 use MakinaCorpus\Drupal\Layout\Storage\Layout;
 use MakinaCorpus\Drupal\Layout\Storage\LayoutStorage;
@@ -25,23 +24,23 @@ function phplayout_menu() {
 
   $items['layout/ajax/add-column'] = [
     'page callback' => 'sf_dic_page',
-    'page arguments' => [LayoutController::class . '::addColumn'],
+    'page arguments' => ['php_layout.drupal_layout_controller::addColumn'],
   ];
   $items['layout/ajax/add-column-container'] = [
     'page callback' => 'sf_dic_page',
-    'page arguments' => [LayoutController::class . '::addColumnContainer'],
+    'page arguments' => ['php_layout.drupal_layout_controller::addColumnContainer'],
   ];
   $items['layout/ajax/add-item'] = [
     'page callback' => 'sf_dic_page',
-    'page arguments' => [LayoutController::class . '::add'],
+    'page arguments' => ['php_layout.drupal_layout_controller::add'],
   ];
   $items['layout/ajax/remove-column'] = [
     'page callback' => 'sf_dic_page',
-    'page arguments' => [LayoutController::class . '::removeColumn'],
+    'page arguments' => ['php_layout.drupal_layout_controller::removeColumn'],
   ];
   $items['layout/ajax/remove'] = [
     'page callback' => 'sf_dic_page',
-    'page arguments' => [LayoutController::class . '::remove'],
+    'page arguments' => ['php_layout.drupal_layout_controller::remove'],
   ];
 
   return $items;
