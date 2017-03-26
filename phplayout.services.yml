@@ -25,7 +25,8 @@ services:
     arguments: ['@php_layout.storage', '@php_layout.token_storage', '@php_layout.token_generator']
 
   php_layout.edit_controller:
-    public: false
+    # @todo this should not be public, but the Drupal form needs it
+    # public: false
     class: MakinaCorpus\Layout\Controller\EditController
     arguments: ['@php_layout.token_storage', '@php_layout.type_registry', '@php_layout.renderer']
 
@@ -54,4 +55,4 @@ services:
 
   php_layout.drupal_layout_controller:
     class: MakinaCorpus\Drupal\Layout\Controller\LayoutController
-    arguments: ['@php_layout.edit_controller']
+    arguments: ['@php_layout.edit_controller', '@form_builder', '@php_layout.context', '@database']

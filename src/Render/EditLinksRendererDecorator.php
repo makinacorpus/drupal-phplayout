@@ -141,13 +141,15 @@ EOT;
             $innerText = '';
         }
 
-        // @todo find a generic way to push column sizes into configuration
-        //   and the user customize it
-        $innerContainers = $container->getAllItems();
-        $defaultSize = floor(12 / count($innerContainers));
+        $innerText = '';
 
-        foreach ($innerContainers as $child) {
-            $innerText .= $this->renderColumn(['md' => $defaultSize], $collection->getRenderedItem($child), $collection->identify($child));
+        if (!$container->isEmpty()) {
+            $innerContainers = $container->getAllItems();
+            $defaultSize = floor(12 / count($innerContainers));
+
+            foreach ($innerContainers as $child) {
+                $innerText .= $this->renderColumn(['md' => $defaultSize], $collection->getRenderedItem($child), $collection->identify($child));
+            }
         }
 
         return $this->renderRow($innerText, $collection->identify($container));
@@ -232,8 +234,25 @@ EOT;
                 'th-large'
             ),
             '<li class="divider"></li>',
-//             $this->renderLink(t('Preend item'), 'layout/ajax/{layout}/column/{id}/prepend', $options),
-//             $this->renderLink(t('Append item'), 'layout/ajax/{layout}/column/{id}/prepend', $options),
+            $this->renderLink(
+                t("Prepend item"),
+                'layout/callback/add-item',
+                $this->createOptions($container, [
+                    'containerId' => $container->getStorageId(),
+                    'position' => 0,
+                ]),
+                'picture'
+            ),
+            $this->renderLink(
+                t("Append item"),
+                'layout/callback/add-item',
+                $this->createOptions($container, [
+                    'containerId' => $container->getStorageId(),
+                    'position' => $container->count(),
+                ]),
+                'picture'
+            ),
+            '<li class="divider"></li>',
             $this->renderLink(
                 t('Add column before'),
                 'layout/ajax/add-column',

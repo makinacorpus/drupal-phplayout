@@ -2,7 +2,11 @@
 
 namespace MakinaCorpus\Drupal\Layout\Controller;
 
+use Drupal\Core\Form\FormBuilderInterface;
+use MakinaCorpus\Drupal\Layout\Form\LayoutAddItemForm;
 use MakinaCorpus\Drupal\Sf\Controller;
+use MakinaCorpus\Drupal\Sf\DrupalResponse;
+use MakinaCorpus\Layout\Controller\Context;
 use MakinaCorpus\Layout\Controller\EditController;
 use MakinaCorpus\Layout\Grid\ItemInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,11 +25,33 @@ class LayoutController extends Controller
     private $controller;
 
     /**
+     * @var FormBuilderInterface
+     */
+    private $drupalFormBuilder;
+
+    /**
+     * @var Context
+     */
+    private $context;
+
+    /**
+     * @var \DatabaseConnection
+     */
+    private $database;
+
+    /**
      * Default constructor
      */
-    public function __construct(EditController $controller)
+    public function __construct(
+        EditController $controller,
+        FormBuilderInterface $drupalFormBuilder,
+        Context $context,
+        \DatabaseConnection $database)
     {
         $this->controller = $controller;
+        $this->drupalFormBuilder = $drupalFormBuilder;
+        $this->context = $context;
+        $this->database = $database;
     }
 
     /**
@@ -58,7 +84,49 @@ class LayoutController extends Controller
     }
 
     /**
-     * {@inheritdoc}
+     * Add item form action
+     */
+    public function addItemFormAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
+    {
+        $this->context->setCurrentToken($tokenString);
+
+        $layout = $this->controller->loadLayoutOrDie($tokenString, $layoutId);
+
+        $response = new DrupalResponse();
+        $response->setContent($this->drupalFormBuilder->getForm(LayoutAddItemForm::class, $layout, $containerId, $position));
+
+        return $response;
+    }
+
+    /**
+     * Node autocomplete callback
+     */
+    public function nodeAutocompleteAction(string $string) : Response
+    {
+        $ret = [];
+
+        $escapedString = $this->database->escapeLike($string) . '%';
+
+        $results = $this
+            ->database
+            ->select('node', 'n')
+            ->fields('n', ['nid', 'title', 'type'])
+            ->condition('n.title', $escapedString, 'LIKE')
+            ->addTag('node_access')
+            ->execute()
+            ->fetchAllKeyed()
+        ;
+
+        foreach ($results as $nid => $title) {
+            $key = check_plain($title) . ' (' . $nid . ')';
+            $ret[$key] = $key;
+        }
+
+        return new JsonResponse($ret);
+    }
+
+    /**
+     * Remove item action
      */
     public function removeAction(Request $request, string $tokenString, int $layoutId, int $itemId) : Response
     {
@@ -69,7 +137,7 @@ class LayoutController extends Controller
     }
 
     /**
-     * {@inheritdoc}
+     * Add horizontal container action
      */
     public function addColumnContainerAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0, int $columnCount = 2, string $style = ItemInterface::STYLE_DEFAULT) : Response
     {
@@ -80,7 +148,7 @@ class LayoutController extends Controller
     }
 
     /**
-     * {@inheritdoc}
+     * Add column action
      */
     public function addColumnAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
     {
@@ -91,7 +159,7 @@ class LayoutController extends Controller
     }
 
     /**
-     * {@inheritdoc}
+     * Remove column action
      */
     public function removeColumnAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
     {
@@ -102,7 +170,7 @@ class LayoutController extends Controller
     }
 
     /**
-     * {@inheritdoc}
+     * Add item action
      */
     public function addAction(Request $request, string $tokenString, int $layoutId, int $containerId, string $itemType, string $itemId, int $position = 0, string $style = ItemInterface::STYLE_DEFAULT) : Response
     {
@@ -113,7 +181,7 @@ class LayoutController extends Controller
     }
 
     /**
-     * {@inheritdoc}
+     * Move item action
      */
     public function moveAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $itemId, int $newPosition) : Response
     {
@@ -124,7 +192,7 @@ class LayoutController extends Controller
     }
 
     /**
-     * {@inheritdoc}
+     * Move item to another layout action
      */
     public function moveOutsideAction(Request $request, string $tokenString) : Response
     {

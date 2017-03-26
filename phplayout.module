@@ -22,6 +22,7 @@ const PHP_LAYOUT_TOKEN_PARAMETER = 'layout-edit';
 function phplayout_menu() {
   $items = [];
 
+  // Edit callbacks for AJAX/other.
   $items['layout/ajax/add-column'] = [
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::addColumn'],
@@ -41,6 +42,18 @@ function phplayout_menu() {
   $items['layout/ajax/remove'] = [
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::remove'],
+  ];
+
+  // Add item form.
+  $items['layout/callback/add-item'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.drupal_layout_controller::addItemForm'],
+  ];
+
+  // Add item node selection autocomplete callback.
+  $items['layout/callback/node-autocomplete'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.drupal_layout_controller::nodeAutocomplete'],
   ];
 
   return $items;
