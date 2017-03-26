@@ -105,11 +105,11 @@ class LayoutStorage implements LayoutStorageInterface
 
                 if ($parent instanceof HorizontalContainer) {
                     $instance = $parent->createColumnAt($item->position, $item->item_id);
-                    $instance->setStorageId($layoutId, $item->id);
+                    $instance->setStorageId($layoutId, $item->id, true);
                 } else {
 
                     $instance = $this->populateLayoutCreateInstance($item, $options);
-                    $instance->setStorageId($layoutId, $item->id);
+                    $instance->setStorageId($layoutId, $item->id, true);
 
                     if ($parent instanceof ColumnContainer) {
                         $parent->addAt($instance, $item->position);
@@ -121,7 +121,7 @@ class LayoutStorage implements LayoutStorageInterface
                 }
             } else {
                 $instance = $this->populateLayoutCreateInstance($item, $options);
-                $instance->setStorageId($layoutId, $item->id);
+                $instance->setStorageId($layoutId, $item->id, true);
                 $toplevel->addAt($instance, $item->position);
             }
 
@@ -340,23 +340,28 @@ class LayoutStorage implements LayoutStorageInterface
 
         // Update the item into database
         if ($parentId != -1) {
-            if ($id && $item->isUpdated()) {
-                $this
-                    ->database
-                    ->update('layout_data')
-                    ->fields([
-                        'parent_id' => $parentId ? $parentId : null,
-                        'layout_id' => $layoutId, // not mandatory
-                        'item_type' => $item->getType(),
-                        'item_id'   => $item->getId(),
-                        'style'     => $item->getStyle(),
-                        'position'  => $position,
-                        'options'   => null, // @todo
-                    ])
-                    ->condition('id', $id)
-                    ->execute()
-                ;
-            } else if (!$id) {
+            if ($item->isPermanent()) {
+                if (!$id) {
+                    throw new GenericError(sprintf("Item cannot be permanent without an identifier"));
+                }
+                if ($item->isUpdated()) {
+                    $this
+                        ->database
+                        ->update('layout_data')
+                        ->fields([
+                            'parent_id' => $parentId ? $parentId : null,
+                            'layout_id' => $layoutId, // not mandatory
+                            'item_type' => $item->getType(),
+                            'item_id'   => $item->getId(),
+                            'style'     => $item->getStyle(),
+                            'position'  => $position,
+                            'options'   => null, // @todo
+                        ])
+                        ->condition('id', $id)
+                        ->execute()
+                    ;
+                }
+            } else {
                 $id = $this
                     ->database
                     ->insert('layout_data')
@@ -372,7 +377,7 @@ class LayoutStorage implements LayoutStorageInterface
                     ->execute()
                 ;
 
-                $item->setStorageId($layoutId, $id);
+                $item->setStorageId($layoutId, $id, true);
             }
         }
 

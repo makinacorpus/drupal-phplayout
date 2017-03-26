@@ -4,11 +4,17 @@ namespace MakinaCorpus\Drupal\Layout\Storage;
 
 use MakinaCorpus\Layout\Controller\EditToken;
 use MakinaCorpus\Layout\Error\InvalidTokenError;
+use MakinaCorpus\Layout\Grid\ContainerInterface;
+use MakinaCorpus\Layout\Grid\ItemInterface;
 use MakinaCorpus\Layout\Storage\LayoutInterface;
 use MakinaCorpus\Layout\Storage\TokenLayoutStorageInterface;
 
 /**
  * Layout database storage
+ *
+ * In order to avoid identifier conflicts with the layout permanent storage
+ * we are going to store negative identifiers in temporary storage (and why
+ * not actually?).
  */
 class TokenLayoutStorage implements TokenLayoutStorageInterface
 {
@@ -65,6 +71,39 @@ class TokenLayoutStorage implements TokenLayoutStorageInterface
             ->execute()
         ;
     }
+
+    /**
+     * Recursively ensure that everyone has an identifier
+     *
+     * @param int $layoutId
+     * @param ItemInterface $item
+     * @param int[] $done
+     * @param int $current
+     */
+    private function ensureEveryoneHasIdentifiers(int $layoutId, ItemInterface $item, &$done, int &$current)
+    {
+        $id = $item->getStorageId() ?: 0;
+
+        // Circular dependency breaker
+        if (isset($done[$id])) {
+            return;
+        }
+
+        if (!$id) {
+            $id = --$current;
+            $item->setStorageId($layoutId, $id, $item->isPermanent());
+        }
+        $done[$id] = $id;
+
+        // This is a top-bottom traversal, we need containers to be saved
+        // before their children
+        if ($item instanceof ContainerInterface) {
+            foreach ($item->getAllItems() as $child) {
+                $this->ensureEveryoneHasIdentifiers($layoutId, $child, $done, $current);
+            }
+        }
+    }
+
 
     /**
      * {@inheritdoc}
@@ -134,6 +173,14 @@ class TokenLayoutStorage implements TokenLayoutStorageInterface
      */
     public function update(string $token, LayoutInterface $layout)
     {
+        $current = 0;
+        $breaker = [];
+
+        // Skip top-level container which should never have an identifier
+        foreach ($layout->getTopLevelContainer()->getAllItems() as $item) {
+            $this->ensureEveryoneHasIdentifiers($layout->getId(), $item, $breaker, $current);
+        }
+
         $this
             ->database
             ->merge('layout_token_layout')

@@ -21,6 +21,7 @@ class TokenStorageTest extends AbstractLayoutTest
     {
         // Skips the first one that is supposed to have no identifier
         foreach ($container->getAllItems() as $item) {
+
             $this->assertNotEquals(null, $item->getStorageId());
             $this->assertNotEquals(null, $item->getLayoutId());
 
