@@ -109,6 +109,23 @@ class NodeType implements ItemTypeInterface
     /**
      * {@inheritdoc}
      */
+    public function getAllowedStylesFor(ItemInterface $item) : array
+    {
+        // We need to list the available view modes for a node
+        // @todo this code is NOT d8 friendly
+        $node = $this->entityManager->getStorage('node')->load($item->getId());
+
+        if (!$node) {
+            return [ItemInterface::STYLE_DEFAULT => t("Default")];
+        }
+
+        // $settings = field_view_mode_settings('node', $node->bundle());
+        return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function renderItem(ItemInterface $item, RenderCollection $collection)
     {
         $storage = $this->entityManager->getStorage('node');
