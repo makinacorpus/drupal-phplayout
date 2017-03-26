@@ -5,6 +5,7 @@ namespace MakinaCorpus\Drupal\Layout\Tests;
 use MakinaCorpus\Drupal\Layout\Storage\Layout;
 use MakinaCorpus\Layout\Controller\EditToken;
 use MakinaCorpus\Layout\Error\InvalidTokenError;
+use MakinaCorpus\Layout\Grid\ContainerInterface;
 use MakinaCorpus\Layout\Grid\HorizontalContainer;
 use MakinaCorpus\Layout\Storage\LayoutInterface;
 use MakinaCorpus\Layout\Tests\Unit\Render\XmlGridRenderer;
@@ -16,6 +17,19 @@ use MakinaCorpus\Layout\Tests\Unit\Render\XmlGridRenderer;
  */
 class TokenStorageTest extends AbstractLayoutTest
 {
+    protected function assertAllItemsHaveIdentifiers(ContainerInterface $container)
+    {
+        // Skips the first one that is supposed to have no identifier
+        foreach ($container->getAllItems() as $item) {
+            $this->assertNotEquals(null, $item->getStorageId());
+            $this->assertNotEquals(null, $item->getLayoutId());
+
+            if ($item instanceof ContainerInterface) {
+                $this->assertAllItemsHaveIdentifiers($item);
+            }
+        }
+    }
+
     /**
      * Test storage creation
      */
@@ -233,24 +247,15 @@ class TokenStorageTest extends AbstractLayoutTest
     }
 
     /**
-     * We need to be able to store our layout for further testing
+     * Get an awesomely complex layout XML representation
+     *
+     * @param string $topLevelId
+     *
+     * @return string
      */
-    public function testCreateAndUpdate()
+    private function getAwesomelyComplexLayoutRepresentation(string $topLevelId)
     {
-        $storage = $this->createStorage();
-        $typeRegistry = $this->createTypeRegistry();
-        $renderer = $this->createRenderer($typeRegistry, new XmlGridRenderer());
-
-        /** @var \MakinaCorpus\Drupal\Layout\Storage\Layout $layout */
-        $layout = $storage->create();
-
-        // For the sake of simplicity, just create something similar to what
-        // the php-layout library does, just see their documentation for more
-        // information.
-        $this->createAwesomelyComplexLayout($layout);
-
-        $topLevelId = 'layout-' . $layout->getId();
-        $representation = <<<EOT
+        return <<<EOT
 <vertical id="container:vbox/{$topLevelId}">
     <horizontal id="container:hbox/C1">
         <column id="container:vbox/C11">
@@ -288,6 +293,31 @@ class TokenStorageTest extends AbstractLayoutTest
     <item id="leaf:b/7" />
 </vertical>
 EOT;
+    }
+
+    /**
+     * We need to be able to store our layout for further testing
+     */
+    public function testCreateAndUpdate()
+    {
+        $tokenStorage = $this->createTokenStorage();
+        $storage      = $this->createStorage();
+        $typeRegistry = $this->createTypeRegistry();
+        $renderer     = $this->createRenderer($typeRegistry, new XmlGridRenderer());
+
+        /** @var \MakinaCorpus\Drupal\Layout\Storage\Layout $layout */
+        $layout = $storage->create();
+        $token = new EditToken('testing', [$layout->getId()]);
+
+        // Save the token, but not yet the layout
+        $tokenStorage->saveToken($token);
+
+        // For the sake of simplicity, just create something similar to what
+        // the php-layout library does, just see their documentation for more
+        // information.
+        $this->createAwesomelyComplexLayout($layout);
+        $topLevelId = 'layout-' . $layout->getId();
+        $representation = $this->getAwesomelyComplexLayoutRepresentation($topLevelId);
 
         // This just tests the testing helpers, and validate that our layout
         // is correct before we do save it.
@@ -295,9 +325,14 @@ EOT;
         $this->assertSameRenderedGrid($representation, $string);
 
         // Now, save it, load it, and ensure rendering is the same.
-        $storage->update($layout);
+        $tokenStorage->update('testing', $layout);
+        // Ensure that all items have identifiers after save
+        $this->assertAllItemsHaveIdentifiers($layout->getTopLevelContainer());
 
-        $otherLayout = $storage->load($layout->getId());
+        $otherLayout = $tokenStorage->load('testing', $layout->getId());
+        // Ensure that all items have identifiers after load
+        $this->assertAllItemsHaveIdentifiers($layout->getTopLevelContainer());
+
         $string = $renderer->render($otherLayout->getTopLevelContainer());
         $this->assertSameRenderedGrid($representation, $string);
 
@@ -324,14 +359,62 @@ EOT;
         $otherLayout->getTopLevelContainer()->getAt(0)->getColumnAt(0)->removeAt(0);
         $otherLayout->getTopLevelContainer()->getAt(0)->getColumnAt(1)->getAt(0)->removeColumnAt(1);
         $otherLayout->getTopLevelContainer()->removeAt(1);
-        $storage->update($otherLayout);
+        $tokenStorage->update('testing', $otherLayout);
 
-        $thirdLayout = $storage->load($layout->getId());
+        $thirdLayout = $tokenStorage->load('testing', $layout->getId());
         $string = $renderer->render($thirdLayout->getTopLevelContainer());
         $this->assertSameRenderedGrid($representation, $string);
+    }
 
-        // Adds new elements, compare to a new representation
+    /**
+     * Temporary items should not alter persistent ones, persistent storage
+     * should correctly save temporary items.
+     */
+    public function testSaveThenPersist()
+    {
+        $tokenStorage = $this->createTokenStorage();
+        $storage      = $this->createStorage();
+        $typeRegistry = $this->createTypeRegistry();
+        $renderer     = $this->createRenderer($typeRegistry, new XmlGridRenderer());
 
-        // Changes a few item styles, and ensure update
+        /** @var \MakinaCorpus\Drupal\Layout\Storage\Layout $layout */
+        $layout = $storage->create();
+        $token = new EditToken('testing', [$layout->getId()]);
+
+        // Save the token, but not yet the layout
+        $tokenStorage->saveToken($token);
+
+        // For the sake of simplicity, just create something similar to what
+        // the php-layout library does, just see their documentation for more
+        // information.
+        $this->createAwesomelyComplexLayout($layout);
+        $topLevelId = 'layout-' . $layout->getId();
+        $representation = $this->getAwesomelyComplexLayoutRepresentation($topLevelId);
+
+        // This just tests the testing helpers, and validate that our layout
+        // is correct before we do save it.
+        $string = $renderer->render($layout->getTopLevelContainer());
+        $this->assertSameRenderedGrid($representation, $string);
+
+        // Storing the reloading the temporary layout as persistent should
+        // then be the the exact replica of the temporary item
+        $storage->update($layout);
+        $persistentLayout = $storage->load($layout->getId());
+        $string = $renderer->render($persistentLayout->getTopLevelContainer());
+        $this->assertSameRenderedGrid($representation, $string);
+
+        // Now, save it, load it, load it, ensure rendering is the same.
+        $tokenStorage->update('testing', $layout);
+        $temporaryLayout = $tokenStorage->load('testing', $layout->getId());
+
+        // Storing the reloading the temporary layout as persistent should
+        // then be the the exact replica of the temporary item.
+        // AND YES THIS IS NECESSARY TO DO IT TWICE: loaded temporary layout
+        // may actually be different (different identifiers) than the unsaved
+        // one, reason why we do this test a second time.
+        $storage->update($temporaryLayout);
+        $persistentLayout = $storage->load($layout->getId());
+        $string = $renderer->render($persistentLayout->getTopLevelContainer());
+        $this->assertSameRenderedGrid($representation, $string);
     }
 }

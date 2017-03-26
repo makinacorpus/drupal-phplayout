@@ -202,37 +202,41 @@ EOT;
 
         // Merge with parent options, visually it's better to hide the parent
         // menu and use its children to replicate its context
-        return [
+        return array_merge(
+            $this->getVerticalContainerButtons($container),
+            ['<li class="divider"></li>'],
+            [
 //             $this->renderLink(t('Preend item'), 'layout/ajax/{layout}/column/{id}/prepend', $options),
 //             $this->renderLink(t('Append item'), 'layout/ajax/{layout}/column/{id}/prepend', $options),
-            $this->renderLink(
-                t('Add column before'),
-                'layout/ajax/add-column',
-                $this->createOptions($container, [
-                    'containerId' => $parentId,
-                    'position' => 0, // @todo
-                ]),
-                'chevron-left'
-            ),
-            $this->renderLink(
-                t('Add column after'),
-                'layout/ajax/add-column',
-                $this->createOptions($container, [
-                    'containerId' => $parentId,
-                    'position' => 0, // @todo
-                ]),
-                'chevron-right'
-            ),
-            $this->renderLink(
-                t('Remove this column'),
-                'layout/ajax/remove-column',
-                $this->createOptions($container, [
-                    'containerId' => $parentId,
-                    'position' => 0, // @todo
-                ]),
-                'remove'
-            ),
-        ];
+                $this->renderLink(
+                    t('Add column before'),
+                    'layout/ajax/add-column',
+                    $this->createOptions($container, [
+                        'containerId' => $parentId,
+                        'position' => 0, // @todo
+                    ]),
+                    'chevron-left'
+                ),
+                $this->renderLink(
+                    t('Add column after'),
+                    'layout/ajax/add-column',
+                    $this->createOptions($container, [
+                        'containerId' => $parentId,
+                        'position' => 0, // @todo
+                    ]),
+                    'chevron-right'
+                ),
+                $this->renderLink(
+                    t('Remove this column'),
+                    'layout/ajax/remove-column',
+                    $this->createOptions($container, [
+                        'containerId' => $parentId,
+                        'position' => 0, // @todo
+                    ]),
+                    'remove'
+                ),
+            ]
+        );
     }
 
     private function getHorizontalButtons(HorizontalContainer $container) : array
