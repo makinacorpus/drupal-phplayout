@@ -98,7 +98,7 @@ EOT;
     public function renderVerticalContainer(VerticalContainer $container, RenderCollection $collection) : string
     {
         if ($this->context->hasToken()) {
-            $innerText = $this->renderMenu($this->getVerticalContainerButtons($container));
+            $innerText = $this->renderMenu($container, $this->getVerticalContainerButtons($container));
         } else {
             $innerText = '';
         }
@@ -116,7 +116,7 @@ EOT;
     public function renderColumnContainer(ColumnContainer $container, RenderCollection $collection) : string
     {
         if ($this->context->hasToken()) {
-            $innerText = $this->renderMenu($this->getColumnButtons($container));
+            $innerText = $this->renderMenu($container, $this->getColumnButtons($container));
         } else {
             $innerText = '';
         }
@@ -136,7 +136,7 @@ EOT;
         // Do not display container options if they are children because
         // they will be merge to each child menu instead
         if ($this->context->hasToken()) {
-            $innerText = $this->renderMenu($this->getHorizontalButtons($container));
+            $innerText = $this->renderMenu($container, $this->getHorizontalButtons($container));
         } else {
             $innerText = '';
         }
@@ -153,16 +153,24 @@ EOT;
         return $this->renderRow($innerText, $collection->identify($container));
     }
 
-    private function renderMenu(array $links) : string
+    private function renderMenu(ItemInterface $item, array $links) : string
     {
-        $title = t("Actions");
+        if ($item instanceof ColumnContainer) {
+            $title = t("Column");
+        } else if ($item instanceof HorizontalContainer) {
+            $title = t("Columns container");
+        } else if ($item instanceof VerticalContainer) {
+            $title = t("Vertical container");
+        } else {
+            $title = t("Actions");
+        }
         $links = '<li>' . implode('</li><li>', $links) . '</li>';
 
         return <<<EOT
 <div class="layout-menu">
   <a href="#" title="{$title}">
     <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
-    <span class="sr-only">{$title}</span>
+    <span class="title">{$title}</span>
   </a>
   <ul>
     {$links}
@@ -202,41 +210,58 @@ EOT;
 
         // Merge with parent options, visually it's better to hide the parent
         // menu and use its children to replicate its context
-        return array_merge(
-            $this->getVerticalContainerButtons($container),
-            ['<li class="divider"></li>'],
-            [
+        return [
+            $this->renderLink(
+                t('Prepend column container'),
+                'layout/ajax/add-column-container',
+                $this->createOptions($container, [
+                    'containerId' => $container->getStorageId(),
+                    'position' => 0,
+                    'columnCount' => 2,
+                ]),
+                'th-large'
+            ),
+            $this->renderLink(
+                t('Append column container'),
+                'layout/ajax/add-column-container',
+                $this->createOptions($container, [
+                    'containerId' => $container->getStorageId(),
+                    'position' => $container->count(),
+                    'columnCount' => 2,
+                ]),
+                'th-large'
+            ),
+            '<li class="divider"></li>',
 //             $this->renderLink(t('Preend item'), 'layout/ajax/{layout}/column/{id}/prepend', $options),
 //             $this->renderLink(t('Append item'), 'layout/ajax/{layout}/column/{id}/prepend', $options),
-                $this->renderLink(
-                    t('Add column before'),
-                    'layout/ajax/add-column',
-                    $this->createOptions($container, [
-                        'containerId' => $parentId,
-                        'position' => 0, // @todo
-                    ]),
-                    'chevron-left'
-                ),
-                $this->renderLink(
-                    t('Add column after'),
-                    'layout/ajax/add-column',
-                    $this->createOptions($container, [
-                        'containerId' => $parentId,
-                        'position' => 0, // @todo
-                    ]),
-                    'chevron-right'
-                ),
-                $this->renderLink(
-                    t('Remove this column'),
-                    'layout/ajax/remove-column',
-                    $this->createOptions($container, [
-                        'containerId' => $parentId,
-                        'position' => 0, // @todo
-                    ]),
-                    'remove'
-                ),
-            ]
-        );
+            $this->renderLink(
+                t('Add column before'),
+                'layout/ajax/add-column',
+                $this->createOptions($container, [
+                    'containerId' => $parentId,
+                    'position' => 0, // @todo
+                ]),
+                'chevron-left'
+            ),
+            $this->renderLink(
+                t('Add column after'),
+                'layout/ajax/add-column',
+                $this->createOptions($container, [
+                    'containerId' => $parentId,
+                    'position' => 0, // @todo
+                ]),
+                'chevron-right'
+            ),
+            $this->renderLink(
+                t('Remove this column'),
+                'layout/ajax/remove-column',
+                $this->createOptions($container, [
+                    'containerId' => $parentId,
+                    'position' => 0, // @todo
+                ]),
+                'remove'
+            ),
+        ];
     }
 
     private function getHorizontalButtons(HorizontalContainer $container) : array
