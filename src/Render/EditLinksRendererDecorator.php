@@ -4,6 +4,7 @@ namespace MakinaCorpus\Drupal\Layout\Render;
 
 use MakinaCorpus\Layout\Controller\Context;
 use MakinaCorpus\Layout\Grid\ColumnContainer;
+use MakinaCorpus\Layout\Grid\ContainerInterface;
 use MakinaCorpus\Layout\Grid\HorizontalContainer;
 use MakinaCorpus\Layout\Grid\ItemInterface;
 use MakinaCorpus\Layout\Grid\VerticalContainer;
@@ -93,6 +94,33 @@ EOT;
     }
 
     /**
+     * Render a single child
+     *
+     * @param ItemInterface $item
+     * @param RenderCollection $collection
+     *
+     * @return string
+     */
+    private function renderChild(ItemInterface $item, RenderCollection $collection) : string
+    {
+        $rendered = $collection->getRenderedItem($item, false);
+
+        if (!$this->context->hasToken()) {
+            return $rendered;
+        }
+
+        if (!$rendered) {
+            $rendered = '<p class="text-danger">' . t("Broken or missing item") . '</span>';
+        }
+
+        if (!$item instanceof ContainerInterface) {
+            $rendered = $this->renderMenu($item, $this->getItemButtons($item)) . $rendered;
+        }
+
+        return $rendered;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function renderVerticalContainer(VerticalContainer $container, RenderCollection $collection) : string
@@ -104,7 +132,7 @@ EOT;
         }
 
         foreach ($container->getAllItems() as $child) {
-            $innerText .= $collection->getRenderedItem($child);
+            $innerText .= $this->renderChild($child, $collection);
         }
 
         return $this->renderRow($this->renderColumn(['md' => 12], $innerText, $collection->identify($container)));
@@ -122,7 +150,7 @@ EOT;
         }
 
         foreach ($container->getAllItems() as $child) {
-            $innerText .= $collection->getRenderedItem($child);
+            $innerText .= $this->renderChild($child, $collection);
         }
 
         return $innerText;
@@ -140,8 +168,6 @@ EOT;
         } else {
             $innerText = '';
         }
-
-        $innerText = '';
 
         if (!$container->isEmpty()) {
             $innerContainers = $container->getAllItems();

@@ -422,6 +422,14 @@ class LayoutStorage implements LayoutStorageInterface
                     ->condition('id', $done, 'not in')
                     ->execute()
                 ;
+            } else {
+                // Layout is empty, just drop everything
+                $this
+                    ->database
+                    ->delete('layout_data')
+                    ->condition('layout_id', $layout->getId())
+                    ->execute()
+                ;
             }
 
             unset($transaction); // Explicit commit

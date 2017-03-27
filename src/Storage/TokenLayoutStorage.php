@@ -80,7 +80,7 @@ class TokenLayoutStorage implements TokenLayoutStorageInterface
      * @param int[] $done
      * @param int $current
      */
-    private function ensureEveryoneHasIdentifiers(int $layoutId, ItemInterface $item, &$done, int &$current)
+    private function ensureEveryoneHasIdentifiers(int $layoutId, ItemInterface $item, &$done)
     {
         $id = $item->getStorageId() ?: 0;
 
@@ -90,7 +90,7 @@ class TokenLayoutStorage implements TokenLayoutStorageInterface
         }
 
         if (!$id) {
-            $id = --$current;
+            $id = rand(PHP_INT_MIN, 1);
             $item->setStorageId($layoutId, $id, $item->isPermanent());
         }
         $done[$id] = $id;
@@ -99,11 +99,10 @@ class TokenLayoutStorage implements TokenLayoutStorageInterface
         // before their children
         if ($item instanceof ContainerInterface) {
             foreach ($item->getAllItems() as $child) {
-                $this->ensureEveryoneHasIdentifiers($layoutId, $child, $done, $current);
+                $this->ensureEveryoneHasIdentifiers($layoutId, $child, $done);
             }
         }
     }
-
 
     /**
      * {@inheritdoc}
@@ -173,12 +172,11 @@ class TokenLayoutStorage implements TokenLayoutStorageInterface
      */
     public function update(string $token, LayoutInterface $layout)
     {
-        $current = 0;
         $breaker = [];
 
         // Skip top-level container which should never have an identifier
         foreach ($layout->getTopLevelContainer()->getAllItems() as $item) {
-            $this->ensureEveryoneHasIdentifiers($layout->getId(), $item, $breaker, $current);
+            $this->ensureEveryoneHasIdentifiers($layout->getId(), $item, $breaker);
         }
 
         $this
