@@ -5,6 +5,9 @@
 [data-contains]:hover > [data-contains] {
   outline: 1px red dotted;
 }
+.layout-item:hover {
+  outline: 1px green dotted;
+}
 
 /*
 *:hover > .layout-menu > a {

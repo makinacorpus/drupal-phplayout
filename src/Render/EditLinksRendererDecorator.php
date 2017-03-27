@@ -150,7 +150,7 @@ EOT;
         }
 
         foreach ($container->getAllItems() as $child) {
-            $innerText .= $this->renderChild($child, $collection);
+            $innerText .= '<div class="layout-item">' . $this->renderChild($child, $collection) . '</div>';
         }
 
         return $innerText;
