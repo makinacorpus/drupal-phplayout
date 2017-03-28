@@ -126,6 +126,11 @@ class LayoutStorage implements LayoutStorageInterface
             }
 
             if ($instance) {
+                if ($options) {
+                    $instance->setOptions($options);
+                    $instance->toggleUpdateStatus(false);
+                }
+
                 $loaded[$instance->getStorageId()] = $instance;
             }
         }
@@ -345,6 +350,7 @@ class LayoutStorage implements LayoutStorageInterface
                     throw new GenericError(sprintf("Item cannot be permanent without an identifier"));
                 }
                 if ($item->isUpdated()) {
+                    $options = $item->getOptions();
                     $this
                         ->database
                         ->update('layout_data')
@@ -355,13 +361,14 @@ class LayoutStorage implements LayoutStorageInterface
                             'item_id'   => $item->getId(),
                             'style'     => $item->getStyle(),
                             'position'  => $position,
-                            'options'   => null, // @todo
+                            'options'   => $options ? serialize($options) : null,
                         ])
                         ->condition('id', $id)
                         ->execute()
                     ;
                 }
             } else {
+                $options = $item->getOptions();
                 $id = $this
                     ->database
                     ->insert('layout_data')
@@ -372,7 +379,7 @@ class LayoutStorage implements LayoutStorageInterface
                         'item_id'   => $item->getId(),
                         'style'     => $item->getStyle(),
                         'position'  => $position,
-                        'options'   => null, // @todo
+                        'options'   => $options ? serialize($options) : null,
                     ])
                     ->execute()
                 ;

@@ -48,7 +48,7 @@ class NodeType implements ItemTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function create(string $id, string $style = null, array $options = []) : ItemInterface
+    public function create(string $id, string $style = null) : ItemInterface
     {
         return new Item('node', $id, $style);
     }

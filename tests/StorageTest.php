@@ -291,6 +291,10 @@ class StorageTest extends AbstractLayoutTest
         $b11 = $bType->create(11);
         $a12 = $aType->create(12);
 
+        // Add a few options, for fun
+        $b8->setOptions(['foo' => 'bar']);
+        $c31->setOptions(['a' => 12, 'b' => 'test']);
+
         $c11->append($a1);
         $c11->append($b4);
 
@@ -381,6 +385,17 @@ EOT;
         $otherLayout = $storage->load($layout->getId());
         $string = $renderer->render($otherLayout->getTopLevelContainer());
         $this->assertSameRenderedGrid($representation, $string);
+
+        // Check options were loaded correctly
+        $b8 = $otherLayout->getTopLevelContainer()->getAt(1)->getColumnAt(2)->getAt(0);
+        $this->assertTrue($b8->hasOption('foo'));
+        $this->assertFalse($b8->hasOption('a'));
+        $this->assertSame('bar', $b8->getOption('foo', 'nope'));
+        $c31 = $otherLayout->getTopLevelContainer()->getAt(1)->getColumnAt(0);
+        $this->assertTrue($c31->hasOption('a'));
+        $this->assertTrue($c31->hasOption('b'));
+        $this->assertSame(12, $c31->getOption('a', 'nope'));
+        $this->assertSame('test', $c31->getOption('b', 'nope'));
 
         // Remove a few elements, compare to a new representation
         $representation = <<<EOT
