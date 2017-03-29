@@ -7,7 +7,7 @@ use MakinaCorpus\Layout\Grid\ColumnContainer;
 use MakinaCorpus\Layout\Grid\ContainerInterface;
 use MakinaCorpus\Layout\Grid\HorizontalContainer;
 use MakinaCorpus\Layout\Grid\ItemInterface;
-use MakinaCorpus\Layout\Grid\VerticalContainer;
+use MakinaCorpus\Layout\Grid\TopLevelContainer;
 use MakinaCorpus\Layout\Storage\LayoutInterface;
 use MakinaCorpus\Layout\Storage\LayoutStorageInterface;
 use MakinaCorpus\Layout\Type\ItemTypeRegistry;
@@ -53,11 +53,11 @@ class LayoutStorage implements LayoutStorageInterface
     {
         switch ($item->item_type) {
 
-            case HorizontalContainer::HORIZONTAL_CONTAINER:
+            case ContainerInterface::HORIZONTAL_CONTAINER:
                 return new HorizontalContainer($item->item_id);
 
-            case VerticalContainer::VERTICAL_CONTAINER:
-                return new VerticalContainer($item->item_id);
+            case ContainerInterface::VERTICAL_CONTAINER:
+                return new ColumnContainer($item->item_id);
 
             default:
                 return $this->typeRegistry->getType($item->item_type)->create($item->item_id, $item->style, $options);
@@ -107,14 +107,9 @@ class LayoutStorage implements LayoutStorageInterface
                     $instance = $parent->createColumnAt($item->position, $item->item_id);
                     $instance->setStorageId($layoutId, $item->id, true);
                 } else {
-
                     $instance = $this->populateLayoutCreateInstance($item, $options);
                     $instance->setStorageId($layoutId, $item->id, true);
-
                     if ($parent instanceof ColumnContainer) {
-                        $parent->addAt($instance, $item->position);
-                        $parent->toggleUpdateStatus(false);
-                    } else if ($parent instanceof VerticalContainer) {
                         $parent->addAt($instance, $item->position);
                         $parent->toggleUpdateStatus(false);
                     }

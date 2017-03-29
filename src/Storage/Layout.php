@@ -2,7 +2,7 @@
 
 namespace MakinaCorpus\Drupal\Layout\Storage;
 
-use MakinaCorpus\Layout\Grid\VerticalContainer;
+use MakinaCorpus\Layout\Grid\TopLevelContainer;
 use MakinaCorpus\Layout\Storage\AbstractLayout;
 
 /**
@@ -17,9 +17,7 @@ class Layout extends AbstractLayout
     private $container;
 
     /**
-     * Get layout identifier
-     *
-     * @return int
+     * {@inheritdoc}
      */
     public function getId() : int
     {
@@ -57,14 +55,12 @@ class Layout extends AbstractLayout
     }
 
     /**
-     * Get top level container
-     *
-     * @return VerticalContainer
+     * {@inheritdoc}
      */
-    public function getTopLevelContainer() : VerticalContainer
+    public function getTopLevelContainer() : TopLevelContainer
     {
         if (!$this->container) {
-            $this->container = new VerticalContainer('layout-' . $this->id);
+            $this->container = new TopLevelContainer('layout-' . $this->id);
             $this->container->setStorageId($this->id, 0, false);
         }
 

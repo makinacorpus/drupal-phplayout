@@ -7,7 +7,7 @@ use MakinaCorpus\Layout\Grid\ColumnContainer;
 use MakinaCorpus\Layout\Grid\ContainerInterface;
 use MakinaCorpus\Layout\Grid\HorizontalContainer;
 use MakinaCorpus\Layout\Grid\ItemInterface;
-use MakinaCorpus\Layout\Grid\VerticalContainer;
+use MakinaCorpus\Layout\Grid\TopLevelContainer;
 use MakinaCorpus\Layout\Render\BootstrapGridRenderer;
 use MakinaCorpus\Layout\Render\RenderCollection;
 
@@ -123,10 +123,10 @@ EOT;
     /**
      * {@inheritdoc}
      */
-    public function renderVerticalContainer(VerticalContainer $container, RenderCollection $collection) : string
+    public function renderTopLevelContainer(TopLevelContainer $container, RenderCollection $collection) : string
     {
         if ($this->context->hasToken()) {
-            $innerText = $this->renderMenu($container, $this->getVerticalContainerButtons($container));
+            $innerText = $this->renderMenu($container, $this->getTopLevelContainerButtons($container));
         } else {
             $innerText = '';
         }
@@ -187,10 +187,10 @@ EOT;
             $title = t("Column");
         } else if ($item instanceof HorizontalContainer) {
             $title = t("Columns container");
-        } else if ($item instanceof VerticalContainer) {
-            $title = t("Vertical container");
+        } else if ($item instanceof TopLevelContainer) {
+            $title = t("Top level container");
         } else {
-            $title = t("Actions");
+            $title = t("Item");
         }
         $links = '<li>' . implode('</li><li>', $links) . '</li>';
 
@@ -234,7 +234,9 @@ EOT;
 
     private function getColumnButtons(ColumnContainer $container) : array
     {
-        $parentId = $container->getParent()->getStorageId();
+        $parent   = $container->getParent();
+        $parentId = $parent->getStorageId();
+        $index    = $parent->getIndexOf($container);
 
         // Merge with parent options, visually it's better to hide the parent
         // menu and use its children to replicate its context
@@ -284,7 +286,7 @@ EOT;
                 'layout/ajax/add-column',
                 $this->createOptions($container, [
                     'containerId' => $parentId,
-                    'position' => 0, // @todo
+                    'position' => $index,
                 ]),
                 'chevron-left'
             ),
@@ -293,7 +295,7 @@ EOT;
                 'layout/ajax/add-column',
                 $this->createOptions($container, [
                     'containerId' => $parentId,
-                    'position' => 0, // @todo
+                    'position' => $index + 1,
                 ]),
                 'chevron-right'
             ),
@@ -302,7 +304,7 @@ EOT;
                 'layout/ajax/remove-column',
                 $this->createOptions($container, [
                     'containerId' => $parentId,
-                    'position' => 0, // @todo
+                    'position' => $index,
                 ]),
                 'remove'
             ),
@@ -341,11 +343,9 @@ EOT;
         ];
     }
 
-    private function getVerticalContainerButtons(VerticalContainer $container) : array
+    private function getTopLevelContainerButtons(TopLevelContainer $container) : array
     {
         return [
-//             $this->renderLink(t('Prepend item'), 'layout/ajax/{layout}/vbox/{id}/prepend', $options),
-//             $this->renderLink(t('Append item'), 'layout/ajax/{layout}/vbox/{id}/append', $options),
             $this->renderLink(
                 t('Prepend column container'),
                 'layout/ajax/add-column-container',
@@ -366,13 +366,24 @@ EOT;
                 ]),
                 'th-large'
             ),
+            '<li class="divider"></li>',
             $this->renderLink(
-                t('Remove'),
-                'layout/ajax/remove',
+                t("Prepend item"),
+                'layout/callback/add-item',
                 $this->createOptions($container, [
-                    'itemId' => $container->getStorageId(),
+                    'containerId' => $container->getStorageId(),
+                    'position' => 0,
                 ]),
-                'remove'
+                'picture'
+            ),
+            $this->renderLink(
+                t("Append item"),
+                'layout/callback/add-item',
+                $this->createOptions($container, [
+                    'containerId' => $container->getStorageId(),
+                    'position' => $container->count(),
+                ]),
+                'picture'
             ),
         ];
     }
@@ -380,8 +391,26 @@ EOT;
     private function getItemButtons(ItemInterface $item) : array
     {
         return [
-//             $this->renderLink(t('Add item before'), 'layout/ajax/{layout}/item/{id}/add-before', $options),
-//             $this->renderLink(t('Add item after'), 'layout/ajax/{layout}/item/{id}/add-after', $options),
+//             '<li class="divider"></li>',
+//             $this->renderLink(
+//                 t("Prepend item"),
+//                 'layout/callback/add-item',
+//                 $this->createOptions($item, [
+//                     'containerId' => $item->getStorageId(),
+//                     'position' => 0,
+//                 ]),
+//                 'picture'
+//             ),
+//             $this->renderLink(
+//                 t("Append item"),
+//                 'layout/callback/add-item',
+//                 $this->createOptions($item, [
+//                     'containerId' => $item->getStorageId(),
+//                     'position' => $item->count(),
+//                 ]),
+//                 'picture'
+//             ),
+//             '<li class="divider"></li>',
             $this->renderLink(
                 t('Remove'),
                 'layout/ajax/remove',

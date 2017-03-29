@@ -5,7 +5,7 @@ namespace MakinaCorpus\Drupal\Layout\Tests;
 use MakinaCorpus\Drupal\Layout\Storage\Layout;
 use MakinaCorpus\Layout\Error\GenericError;
 use MakinaCorpus\Layout\Grid\HorizontalContainer;
-use MakinaCorpus\Layout\Grid\VerticalContainer;
+use MakinaCorpus\Layout\Grid\TopLevelContainer;
 use MakinaCorpus\Layout\Storage\LayoutInterface;
 use MakinaCorpus\Layout\Tests\Unit\Render\XmlGridRenderer;
 
@@ -46,7 +46,7 @@ class StorageTest extends AbstractLayoutTest
 
         // We must always have a top level container
         $container = $layout->getTopLevelContainer();
-        $this->assertInstanceOf(VerticalContainer::class, $container);
+        $this->assertInstanceOf(TopLevelContainer::class, $container);
         $this->assertSame('layout-' . $layout->getId(), $container->getId());
 
         // Load it
@@ -54,7 +54,7 @@ class StorageTest extends AbstractLayoutTest
         $this->assertNotSame($layout, $otherLayout);
         $this->assertSame($layout->getId(), $otherLayout->getId());
         $otherContainer = $otherLayout->getTopLevelContainer();
-        $this->assertInstanceOf(VerticalContainer::class, $otherContainer);
+        $this->assertInstanceOf(TopLevelContainer::class, $otherContainer);
         $this->assertSame('layout-' . $otherLayout->getId(), $otherContainer->getId());
     }
 
