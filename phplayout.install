@@ -215,6 +215,22 @@ function phplayout_modules_enabled($modules) {
 /**
  * Installs the {layout_token} and {layout_token_layout} tables.
  */
+function phplayout_update_7001() {
+  if (!db_field_exists('layout', 'region')) {
+    db_add_field('layout', 'region', [
+      'description' => "Region this layout is attached to",
+      'type'        => 'varchar',
+      'length'      => 128,
+      'not null'    => false,
+      'default'     => null,
+    ]);
+  }
+  db_constraint_fix('phplayout');
+}
+
+/**
+ * Installs the {layout_token} and {layout_token_layout} tables.
+ */
 function phplayout_update_7002() {
   if (!db_table_exists('layout_token')) {
     db_create_table('layout_token', drupal_get_schema_unprocessed('phplayout', 'layout_token'));
