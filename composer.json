@@ -37,7 +37,8 @@
     "require" : {
         "makinacorpus/drupal-plusql" : "^1",
         "makinacorpus/drupal-sf-dic" : "^3.2",
-        "makinacorpus/php-layout" : "*"
+        "makinacorpus/php-layout" : "*",
+        "php": ">=7.0"
     },
     "suggests" : {
         "makinacorpus/drupal-badm" : "Bootstrap 3.x based admin theme, suitable for using default templates",
