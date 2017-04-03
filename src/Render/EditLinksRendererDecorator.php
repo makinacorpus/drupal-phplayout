@@ -50,10 +50,8 @@ class EditLinksRendererDecorator extends BootstrapGridRenderer
         }
 
         return <<<EOT
-<div class="container-fluid"{$additional}>
-  <div class="row"{$container}>
+  <div class="row"{$additional}{$container}>
     {$innerText}
-  </div>
 </div>
 EOT;
     }
@@ -135,7 +133,7 @@ EOT;
             $innerText .= $this->renderChild($child, $collection);
         }
 
-        return $this->renderRow($this->renderColumn(['md' => 12], $innerText, $collection->identify($container)));
+        return '<div class="container-fluid">' . $this->renderRow($this->renderColumn(['md' => 12], $innerText, $collection->identify($container))) . '</div>';
     }
 
     /**
