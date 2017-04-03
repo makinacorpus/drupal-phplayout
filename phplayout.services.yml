@@ -54,5 +54,15 @@ services:
     tags: [{name: php_layout.type}]
 
   php_layout.drupal_layout_controller:
+    public: true
     class: MakinaCorpus\Drupal\Layout\Controller\LayoutController
     arguments: ['@php_layout.edit_controller', '@form_builder', '@php_layout.context', '@database']
+
+  #
+  # Pure Drupal helpers
+  #
+
+  php_layout.drupal_page_injector:
+    public: true
+    class: MakinaCorpus\Drupal\Layout\DefaultPageInjector
+    arguments: ['@php_layout.context', '@database', '@php_layout.renderer', '@php_layout.storage']

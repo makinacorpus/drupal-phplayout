@@ -3,11 +3,8 @@
  * PHP Layout Drupal module hook definitions and module placeholder.
  */
 
-use MakinaCorpus\Drupal\Layout\Form\LayoutContextEditForm;
 use MakinaCorpus\Drupal\Layout\Storage\Layout;
-use MakinaCorpus\Layout\Error\InvalidTokenError;
 use MakinaCorpus\Layout\Grid\Item;
-use MakinaCorpus\Layout\Storage\LayoutStorageInterface;
 
 /**
  * Layout edit token get parameter name
@@ -61,56 +58,5 @@ function phplayout_menu() {
  * Implements hook_page_build().
  */
 function phplayout_page_build(&$page) {
-  if (arg(0) === 'node' && !arg(2) && ($node = menu_get_object())) {
-
-    /** @var \MakinaCorpus\Layout\Storage\LayoutStorageInterface $storage */
-    $storage = \Drupal::service('php_layout.storage');
-    /** @var \MakinaCorpus\Layout\Controller\Context $context */
-    $context = \Drupal::service('php_layout.context');
-
-    // Fetch all layouts for the node
-    $layoutIdList = db_query("select id from {layout} where node_id = ?", [$node->nid])->fetchCol();
-
-    if ($layoutIdList) {
-      $layouts = $storage->loadMultiple($layoutIdList);
-    } else {
-      // Create layout for node
-      $layouts = [$storage->create(['node_id' => $node->nid])];
-    }
-
-    $context->add($layouts, true /* @todo access checks on each layout */);
-
-    // Load the token after we did loaded all the layouts, to ensure that
-    // their temporary equivalents attached to the token will be reloaded
-    // instead.
-    if (isset($_GET[PHP_LAYOUT_TOKEN_PARAMETER])) {
-      try {
-        $context->setCurrentToken($_GET[PHP_LAYOUT_TOKEN_PARAMETER]);
-      } catch (InvalidTokenError $e) {
-        // Fallback on non-edit mode
-      }
-    }
-
-    /** @var \MakinaCorpus\Layout\Render\Renderer $renderer */
-    $renderer = \Drupal::service('php_layout.renderer');
-
-    // Working multiple pass version
-    foreach ($context->getAll() as $layout) {
-      if (!$layout instanceof Layout || !($region = $layout->getRegion())) {
-        $region = 'content';
-      }
-      $page[$region]['layout'][$layout->getId()] = ['#markup' => $renderer->render($layout->getTopLevelContainer())];
-    }
-
-    if ($context->containsEditableLayouts()) {
-      if ($context->hasToken()) {
-        $path = drupal_get_path('module', 'phplayout');
-        drupal_add_css($path . '/public/edit.css');
-        drupal_add_js($path . '/public/edit.js');
-      }
-
-      $page['content']['layout_edit_form'] = \Drupal::formBuilder()->getForm(LayoutContextEditForm::class);
-      $page['content']['layout_edit_form']['#weight'] = -1000;
-    }
-  }
+  \Drupal::service('php_layout.drupal_page_injector')->inject(\Drupal::request(), $page);
 }
