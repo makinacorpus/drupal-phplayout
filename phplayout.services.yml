@@ -65,4 +65,10 @@ services:
   php_layout.drupal_page_injector:
     public: true
     class: MakinaCorpus\Drupal\Layout\DefaultPageInjector
-    arguments: ['@php_layout.context', '@database', '@php_layout.renderer', '@php_layout.storage']
+    arguments: ['@php_layout.context', '@database', '@event_dispatcher', '@php_layout.renderer', '@php_layout.storage']
+
+  php_layout.collect_layout_event_subscriber:
+    public: true
+    class: MakinaCorpus\Drupal\Layout\Event\CollectLayoutEventSubscriber
+    arguments: ['@database']
+    tags: [{name: event_subscriber}]

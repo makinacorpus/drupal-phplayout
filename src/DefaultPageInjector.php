@@ -2,13 +2,14 @@
 
 namespace MakinaCorpus\Drupal\Layout;
 
+use MakinaCorpus\Drupal\Layout\Event\CollectLayoutEvent;
 use MakinaCorpus\Drupal\Layout\Form\LayoutContextEditForm;
 use MakinaCorpus\Drupal\Layout\Storage\Layout;
 use MakinaCorpus\Layout\Controller\Context;
 use MakinaCorpus\Layout\Error\InvalidTokenError;
 use MakinaCorpus\Layout\Render\Renderer;
-use MakinaCorpus\Layout\Storage\LayoutInterface;
 use MakinaCorpus\Layout\Storage\LayoutStorageInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -29,6 +30,11 @@ class DefaultPageInjector
     private $database;
 
     /**
+     * @var EventDispatcherInterface
+     */
+    private $eventDispatcher;
+
+    /**
      * @var Renderer
      */
     private $renderer;
@@ -43,73 +49,22 @@ class DefaultPageInjector
      *
      * @param Context $context
      * @param \DatabaseConnection $database
+     * @param EventDispatcherInterface $eventDispatcher
      * @param Renderer $renderer
      * @param LayoutStorageInterface $storage
      */
-    public function __construct(Context $context, \DatabaseConnection $database, Renderer $renderer, LayoutStorageInterface $storage)
-    {
+    public function __construct(
+        Context $context,
+        \DatabaseConnection $database,
+        EventDispatcherInterface $eventDispatcher,
+        Renderer $renderer,
+        LayoutStorageInterface $storage
+    ) {
         $this->context  = $context;
         $this->database = $database;
+        $this->eventDispatcher = $eventDispatcher;
         $this->renderer = $renderer;
         $this->storage  = $storage;
-    }
-
-    /**
-     * Get context
-     *
-     * @return Context
-     */
-    final protected function getContext() : Context
-    {
-        return $this->context;
-    }
-
-    /**
-     * Get database
-     *
-     * @return \DatabaseConnection
-     */
-    final protected function getDatabase() : \DatabaseConnection
-    {
-        return $this->database;
-    }
-
-    /**
-     * Get layout storage
-     *
-     * @return LayoutStorageInterface
-     */
-    final protected function getLayoutStorage() : LayoutStorageInterface
-    {
-        return $this->storage;
-    }
-
-    /**
-     * Get page layouts identifier list
-     *
-     * Override this depending on your business.
-     *
-     * @return LayoutInterface[]
-     */
-    protected function getPageLayoutList() : array
-    {
-        if (arg(0) !== 'node' && arg(2)) {
-            return [];
-        }
-        if (!$node = menu_get_object()) {
-            return [];
-        }
-
-        $layoutIdList = $this->getDatabase()->query("select id from {layout} where node_id = ?", [$node->nid])->fetchCol();
-
-        if ($layoutIdList) {
-            $layouts = $this->getLayoutStorage()->loadMultiple($layoutIdList);
-        } else {
-            // Automatically creates new layout for node if none exist
-            $layouts = [$this->getLayoutStorage()->create(['node_id' => $node->nid])];
-        }
-
-        return $layouts;
     }
 
     /**
@@ -122,10 +77,14 @@ class DefaultPageInjector
      */
     public function inject(Request $request, array &$page)
     {
-        // Fetch all layouts for the node
-        $layouts = $this->getPageLayoutList();
+        $event = new CollectLayoutEvent($this->storage);
+        $this->eventDispatcher->dispatch(CollectLayoutEvent::EVENT_NAME, $event);
 
-        $this->context->add($layouts, true /* @todo access checks on each layout */);
+        // Fetch all layouts and set them into the context
+        $accessMap = $event->getAccessMap();
+        foreach ($event->getLayouts() as $layout) {
+            $this->context->add([$layout], $accessMap[$layout->getId()]);
+        }
 
         // Load the token after we did loaded all the layouts, to ensure that
         // their temporary equivalents attached to the token will be reloaded
@@ -147,14 +106,17 @@ class DefaultPageInjector
         }
 
         if ($this->context->containsEditableLayouts()) {
+
             if ($this->context->hasToken()) {
                 $path = drupal_get_path('module', 'phplayout');
                 drupal_add_css($path . '/public/edit.css');
                 drupal_add_js($path . '/public/edit.js');
             }
 
-            $page['content']['layout_edit_form'] = \Drupal::formBuilder()->getForm(LayoutContextEditForm::class);
-            $page['content']['layout_edit_form']['#weight'] = -1000;
+            if ($event->isFormEnabled()) {
+                $page['content']['layout_edit_form'] = \Drupal::formBuilder()->getForm(LayoutContextEditForm::class);
+                $page['content']['layout_edit_form']['#weight'] = -1000;
+            }
         }
     }
 }
