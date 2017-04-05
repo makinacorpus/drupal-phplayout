@@ -120,7 +120,10 @@ class NodeType implements ItemTypeInterface
         }
 
         // $settings = field_view_mode_settings('node', $node->bundle());
-        return [];
+        return [
+            ItemInterface::STYLE_DEFAULT  => t("Teaser"),
+            'full'                        => t("Full"),
+        ];
     }
 
     /**

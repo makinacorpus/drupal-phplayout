@@ -14,7 +14,7 @@ use MakinaCorpus\Layout\Render\RenderCollection;
 /**
  * Bootstrap 3 compatible grid renderer.
  */
-class EditLinksRendererDecorator extends BootstrapGridRenderer
+class BootstrapRendererDecorator extends BootstrapGridRenderer
 {
     /**
      * @var Context
@@ -32,66 +32,6 @@ class EditLinksRendererDecorator extends BootstrapGridRenderer
     }
 
     /**
-     * Render column
-     *
-     * @param string $innerText
-     *
-     * @return string
-     */
-    private function renderRow(string $innerText, string $identifier = null) : string
-    {
-        if ($identifier) {
-            // @todo this should be escaped
-            $additional = ' data-id="' . $identifier . '"';
-            $container  = ' data-contains="1"';
-        } else {
-            $additional = '';
-            $container  = '';
-        }
-
-        return <<<EOT
-  <div class="row"{$additional}{$container}>
-    {$innerText}
-</div>
-EOT;
-    }
-
-    /**
-     * Render column
-     *
-     * @param string[] $sizes
-     *   An array of size, keys are media display identifiers mapping to
-     *   bootstrap own prefixes (xs, sm, md, lg) and values are the width
-     *   on the bootstrap grid for those medias.
-     * @param string $innerText
-     * @param string $identifier
-     *
-     * @return string
-     */
-    private function renderColumn(array $sizes, string $innerText, string $identifier = null) : string
-    {
-        $classes = [];
-        foreach ($sizes as $media => $size) {
-            $classes[] = 'col-' . $media . '-' . $size;
-        }
-
-        $classAttr = implode(' ', $classes);
-
-        if ($identifier) {
-            // @todo this should be escaped
-            $additional = ' data-id="' . $identifier . '" data-contains="1"';
-        } else {
-            $additional = '';
-        }
-
-        return <<<EOT
-<div class="{$classAttr}"{$additional}>
-  {$innerText}
-</div>
-EOT;
-    }
-
-    /**
      * Render a single child
      *
      * @param ItemInterface $item
@@ -99,7 +39,7 @@ EOT;
      *
      * @return string
      */
-    private function renderChild(ItemInterface $item, RenderCollection $collection) : string
+    protected function renderChild(ItemInterface $item, RenderCollection $collection) : string
     {
         $rendered = $collection->getRenderedItem($item, false);
 
@@ -112,7 +52,7 @@ EOT;
         }
 
         if (!$item instanceof ContainerInterface) {
-            $rendered = $this->renderMenu($item, $this->getItemButtons($item)) . $rendered;
+            $rendered = '<div class="layout-item">' . $this->renderMenu($item, $this->getItemButtons($item)) . $rendered . '</div>';
         }
 
         return $rendered;
@@ -133,7 +73,15 @@ EOT;
             $innerText .= $this->renderChild($child, $collection);
         }
 
-        return '<div class="container-fluid">' . $this->renderRow($this->renderColumn(['md' => 12], $innerText, $collection->identify($container))) . '</div>';
+        return $this->renderContainer(
+            $this->renderRow(
+                $this->renderColumn(['md' => 12],
+                    $innerText,
+                    $collection->identify($container)
+                )
+            ),
+            $container
+        );
     }
 
     /**
@@ -148,7 +96,7 @@ EOT;
         }
 
         foreach ($container->getAllItems() as $child) {
-            $innerText .= '<div class="layout-item">' . $this->renderChild($child, $collection) . '</div>';
+            $innerText .= $this->renderChild($child, $collection);
         }
 
         return $innerText;
@@ -172,11 +120,16 @@ EOT;
             $defaultSize = floor(12 / count($innerContainers));
 
             foreach ($innerContainers as $child) {
-                $innerText .= $this->renderColumn(['md' => $defaultSize], $collection->getRenderedItem($child), $collection->identify($child));
+                $innerText .= $this->renderColumn(
+                    ['md' => $defaultSize],
+                    $collection->getRenderedItem($child),
+                    $collection->identify($child),
+                    $child
+                );
             }
         }
 
-        return $this->renderRow($innerText, $collection->identify($container));
+        return $this->renderRow($innerText, $collection->identify($container), $container);
     }
 
     private function renderMenu(ItemInterface $item, array $links) : string
@@ -389,26 +342,6 @@ EOT;
     private function getItemButtons(ItemInterface $item) : array
     {
         return [
-//             '<li class="divider"></li>',
-//             $this->renderLink(
-//                 t("Prepend item"),
-//                 'layout/callback/add-item',
-//                 $this->createOptions($item, [
-//                     'containerId' => $item->getStorageId(),
-//                     'position' => 0,
-//                 ]),
-//                 'picture'
-//             ),
-//             $this->renderLink(
-//                 t("Append item"),
-//                 'layout/callback/add-item',
-//                 $this->createOptions($item, [
-//                     'containerId' => $item->getStorageId(),
-//                     'position' => $item->count(),
-//                 ]),
-//                 'picture'
-//             ),
-//             '<li class="divider"></li>',
             $this->renderLink(
                 t('Remove'),
                 'layout/ajax/remove',

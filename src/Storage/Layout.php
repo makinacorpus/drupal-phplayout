@@ -55,13 +55,35 @@ class Layout extends AbstractLayout
     }
 
     /**
+     * Create top level container
+     *
+     * @return TopLevelContainer
+     */
+    private function createTopLevelContainer() : TopLevelContainer
+    {
+        $instance = new TopLevelContainer('layout-' . $this->id);
+        $instance->setStorageId($this->id, 0, false);
+
+        if ($this->region) {
+            $options = variable_get('phplayout_region_options', []);
+
+            if (isset($options[$this->region])) {
+                $instance->setOptions($options[$this->region], true);
+            } else if (isset($options['default'])) {
+                $instance->setOptions($options['default'], true);
+            }
+        }
+
+        return $instance;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function getTopLevelContainer() : TopLevelContainer
     {
         if (!$this->container) {
-            $this->container = new TopLevelContainer('layout-' . $this->id);
-            $this->container->setStorageId($this->id, 0, false);
+            $this->container = $this->createTopLevelContainer();
         }
 
         return $this->container;

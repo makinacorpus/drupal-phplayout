@@ -39,7 +39,7 @@ function phplayout_menu() {
     'page arguments' => ['php_layout.drupal_layout_controller::remove'],
   ];
 
-  // Add item form.
+  // Add item form, override or alter this menu entry to change it.
   $items['layout/callback/add-item'] = [
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::addItemForm'],

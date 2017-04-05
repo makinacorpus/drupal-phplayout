@@ -44,7 +44,7 @@ services:
 
   php_layout.grid_renderer:
     public: false
-    class: MakinaCorpus\Drupal\Layout\Render\EditLinksRendererDecorator
+    class: MakinaCorpus\Drupal\Layout\Render\BootstrapRendererDecorator
     arguments: ['@php_layout.context']
 
   php_layout.type.drupal_node:
