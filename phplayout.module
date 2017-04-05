@@ -60,3 +60,27 @@ function phplayout_menu() {
 function phplayout_page_build(&$page) {
   \Drupal::service('php_layout.drupal_page_injector')->inject(\Drupal::request(), $page);
 }
+
+/**
+ * Implements hook_library().
+ */
+function phplayout_library() {
+  $path = drupal_get_path('module', 'phplayout') . '/public';
+  $opts = ['type'  => 'file', 'media' => 'screen'];
+
+  return [
+    'edit_basic' => [
+      'title'   => 'PHP layout - Basic edit UI',
+      'version' => '1.0',
+      'js'      => [$path . '/edit.js' => []],
+      'css'     => [$path . '/edit.css' => $opts],
+      'dependencies' => [['phplayout', 'dragula']],
+    ],
+    'dragula' => [
+      'title'   => 'DragulaJS',
+      'version' => '3.7.2',
+      'js'      => [$path . '/dragula-3.7.2/dist/dragula.min.js' => []],
+      'css'     => [$path . '/dragula-3.7.2/dist/dragula.min.css' => $opts],
+    ],
+  ];
+}

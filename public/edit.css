@@ -8,6 +8,9 @@
 .layout-item:hover {
   outline: 1px green dotted;
 }
+[data-contains].droppable {
+  min-height: 100px !important;
+}
 
 /*
 *:hover > .layout-menu > a {

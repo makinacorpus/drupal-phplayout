@@ -109,8 +109,7 @@ class DefaultPageInjector
 
             if ($this->context->hasToken()) {
                 $path = drupal_get_path('module', 'phplayout');
-                drupal_add_css($path . '/public/edit.css');
-                drupal_add_js($path . '/public/edit.js');
+                drupal_add_library('phplayout', 'edit_basic');
             }
 
             if ($event->isFormEnabled()) {
