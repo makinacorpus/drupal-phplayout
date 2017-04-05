@@ -9,6 +9,7 @@ use MakinaCorpus\Layout\Controller\EditController;
 use MakinaCorpus\Layout\Grid\ItemInterface;
 use MakinaCorpus\Layout\Storage\LayoutInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use MakinaCorpus\Layout\Controller\EditToken;
 
 /**
  * Layout context edit form
@@ -59,15 +60,16 @@ class LayoutAddItemForm extends FormBase
     /**
      * {inheritdoc}
      */
-    public function buildForm(array $form, FormStateInterface $formState, LayoutInterface $layout = null, int $containerId = null, int $position = 0)
+    public function buildForm(array $form, FormStateInterface $formState, string $tokenString = '', int $layoutId = 0, int $containerId = 0, int $position = 0)
     {
-        if (!$this->context->hasToken()) {
-            return;
+        if (!$tokenString || !$layoutId || !$containerId) {
+            return $form;
         }
 
         // @todo for now only nodes are supported
         $formState->setTemporaryValue('item_type', 'node');
-        $formState->setTemporaryValue('layout', $layout);
+        $formState->setTemporaryValue('token', $tokenString);
+        $formState->setTemporaryValue('layout_id', $layoutId);
         $formState->setTemporaryValue('container_id', $containerId);
         $formState->setTemporaryValue('position', $position);
 
@@ -115,8 +117,8 @@ class LayoutAddItemForm extends FormBase
     public function addItemSubmit(array &$form, FormStateInterface $formState)
     {
         // Okay now breath
-        $tokenString  = $this->context->getCurrentToken()->getToken();
-        $layoutId     = $formState->getTemporaryValue('layout')->getId();
+        $tokenString  = $formState->getTemporaryValue('token');
+        $layoutId     = $formState->getTemporaryValue('layout_id');
         $containerId  = $formState->getTemporaryValue('container_id');
         $itemType     = $formState->getTemporaryValue('item_type');
         $itemId       = null;

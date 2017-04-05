@@ -88,12 +88,10 @@ class LayoutController extends Controller
      */
     public function addItemFormAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
     {
-        $this->context->setCurrentToken($tokenString);
-
-        $layout = $this->controller->loadLayoutOrDie($tokenString, $layoutId);
+        $this->controller->loadLayoutOrDie($tokenString, $layoutId);
 
         $response = new DrupalResponse();
-        $response->setContent($this->drupalFormBuilder->getForm(LayoutAddItemForm::class, $layout, $containerId, $position));
+        $response->setContent($this->drupalFormBuilder->getForm(LayoutAddItemForm::class, $tokenString, $layoutId, $containerId, $position));
 
         return $response;
     }
