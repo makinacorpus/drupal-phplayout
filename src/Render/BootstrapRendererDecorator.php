@@ -39,7 +39,7 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
      *
      * @return string
      */
-    protected function renderChild(ItemInterface $item, RenderCollection $collection) : string
+    protected function doRenderChild(ItemInterface $item, RenderCollection $collection) : string
     {
         $rendered = $collection->getRenderedItem($item, false);
 
@@ -52,7 +52,7 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
         }
 
         if (!$item instanceof ContainerInterface) {
-            $rendered = '<div class="layout-item">' . $this->renderMenu($item, $this->getItemButtons($item)) . $rendered . '</div>';
+            $rendered = '<div data-item>' . $this->renderMenu($item, $this->getItemButtons($item)) . $rendered . '</div>';
         }
 
         return $rendered;
@@ -70,18 +70,10 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
         }
 
         foreach ($container->getAllItems() as $child) {
-            $innerText .= $this->renderChild($child, $collection);
+            $innerText .= $this->doRenderChild($child, $collection);
         }
 
-        return $this->renderContainer(
-            $this->renderRow(
-                $this->renderColumn(['md' => 12],
-                    $innerText,
-                    $collection->identify($container)
-                )
-            ),
-            $container
-        );
+        return $this->doRenderTopLevelContainer($container, $innerText, $collection->identify($container));
     }
 
     /**
@@ -96,7 +88,7 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
         }
 
         foreach ($container->getAllItems() as $child) {
-            $innerText .= $this->renderChild($child, $collection);
+            $innerText .= $this->doRenderChild($child, $collection);
         }
 
         return $innerText;
@@ -120,16 +112,16 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
             $defaultSize = floor(12 / count($innerContainers));
 
             foreach ($innerContainers as $child) {
-                $innerText .= $this->renderColumn(
+                $innerText .= $this->doRenderColumn(
+                    $child,
                     ['md' => $defaultSize],
                     $collection->getRenderedItem($child),
-                    $collection->identify($child),
-                    $child
+                    $collection->identify($child)
                 );
             }
         }
 
-        return $this->renderRow($innerText, $collection->identify($container), $container);
+        return $this->doRenderHorizontalContainer($container, $innerText, $collection->identify($container));
     }
 
     private function renderMenu(ItemInterface $item, array $links) : string
