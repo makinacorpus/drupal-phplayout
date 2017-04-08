@@ -111,6 +111,17 @@ class LayoutController extends Controller
     }
 
     /**
+     * Set page content here action
+     */
+    public function setPageAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
+    {
+        return $this->handleResponse(
+            $request,
+            $this->controller->addAction($tokenString, $layoutId, $containerId, 'page', 1, $position)
+        );
+    }
+
+    /**
      * Node autocomplete callback
      */
     public function nodeAutocompleteAction(string $string) : Response

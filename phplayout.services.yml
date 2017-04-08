@@ -47,16 +47,26 @@ services:
     class: MakinaCorpus\Drupal\Layout\Render\BootstrapRendererDecorator
     arguments: ['@php_layout.context']
 
+  php_layout.drupal_layout_controller:
+    public: true
+    class: MakinaCorpus\Drupal\Layout\Controller\LayoutController
+    arguments: ['@php_layout.edit_controller', '@form_builder', '@php_layout.context', '@database']
+
+  #
+  # Drupal item types
+  #
+
   php_layout.type.drupal_node:
     public: false
     class: MakinaCorpus\Drupal\Layout\Type\NodeType
     arguments: ['@entity.manager']
     tags: [{name: php_layout.type}]
 
-  php_layout.drupal_layout_controller:
-    public: true
-    class: MakinaCorpus\Drupal\Layout\Controller\LayoutController
-    arguments: ['@php_layout.edit_controller', '@form_builder', '@php_layout.context', '@database']
+  php_layout.type.drupal_page:
+    public: false
+    class: MakinaCorpus\Drupal\Layout\Type\PageContentType
+    arguments: ['@entity.manager']
+    tags: [{name: php_layout.type}]
 
   #
   # Pure Drupal helpers

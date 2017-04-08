@@ -44,13 +44,17 @@
         $context.find('[data-contains=0]').once('drag', function () {
           // Ensure this is a top level container
           var topLevel = $(this);
-          var layoutId = $(this).data('id');
+          var layoutId = this.getAttribute('data-id');
 
           // Find all nested containers, nowing that the top level container
           // itself is a container, which must behave like the others.
           var containers = [this];
           topLevel.find('[data-contains=1]').each(function () {
             containers.push(this);
+
+            // Add the data-layout-id attribute on every containers so that
+            // we won't work on wrongly scoped js variables
+            this.setAttribute('data-layout-id', layoutId);
           });
 
           // Aaaaaannd enable it!
@@ -72,28 +76,31 @@
             direction: 'vertical'
           });
 
+          // Handles drop
           drake.on('drop', function (element, target, source, sibling) {
-            // Cancel disallowed movess
-            if (!element.hasAttribute('data-id') || !target.hasAttribute('data-id')) {
+
+            // Cancel disallowed moves
+            if (!element.hasAttribute('data-id') ||
+                !target.hasAttribute('data-id') ||
+                !target.hasAttribute('data-layout-id')
+            ){
               return drake.cancel(true);
             }
 
             // Find item and container identifier
             var itemId = element.getAttribute('data-id');
             var containerId = target.getAttribute('data-id');
+            var layoutId = target.getAttribute('data-layout-id')
 
             // Find the new item position
             var position = 0;
-            if (sibling && sibling.hasAttribute('data-id')) {
-              // We are not the first, then find out what is the real position
-              var nodes = element.parentNode.childNodes;
-              for(var i = 0; i < nodes.length; i++) {
-                if (nodes[i].hasAttribute('data-id')) {
-                  if (nodes[i] === element) {
-                    break; // Found ourselves
-                  }
-                  position++;
+            var nodes = element.parentNode.childNodes;
+            for(var i = 0; i < nodes.length; i++) {
+              if (nodes[i].hasAttribute('data-id')) {
+                if (nodes[i] === element) {
+                  break; // Found ourselves
                 }
+                position++;
               }
             }
 

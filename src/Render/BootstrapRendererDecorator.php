@@ -228,6 +228,16 @@ EOT;
             ),
             '<li class="divider"></li>',
             $this->renderLink(
+                t("Set page content here"),
+                'layout/callback/set-page',
+                $this->createOptions($container, [
+                    'containerId' => $container->getStorageId(),
+                    'position' => 0,
+                ]),
+                'star'
+            ),
+            '<li class="divider"></li>',
+            $this->renderLink(
                 t('Add column before'),
                 'layout/ajax/add-column',
                 $this->createOptions($container, [
@@ -330,6 +340,16 @@ EOT;
                     'position' => $container->count(),
                 ]),
                 'picture'
+            ),
+            '<li class="divider"></li>',
+            $this->renderLink(
+                t("Set page content here"),
+                'layout/callback/set-page',
+                $this->createOptions($container, [
+                    'containerId' => $container->getStorageId(),
+                    'position' => 0,
+                ]),
+                'star'
             ),
         ];
     }

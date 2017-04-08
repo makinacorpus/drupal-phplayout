@@ -64,14 +64,13 @@ class Layout extends AbstractLayout
         $instance = new TopLevelContainer($this->id);
         $instance->setStorageId($this->id, $this->id, false);
 
-        if ($this->region) {
-            $options = variable_get('phplayout_region_options', []);
+        $region   = $this->region ?: 'default';
+        $options  = variable_get('phplayout_region_options', []);
 
-            if (isset($options[$this->region])) {
-                $instance->setOptions($options[$this->region], true);
-            } else if (isset($options['default'])) {
-                $instance->setOptions($options['default'], true);
-            }
+        if (isset($options[$region])) {
+            $instance->setOptions($options[$region], true);
+        } else if (isset($options['default'])) {
+            $instance->setOptions($options['default'], true);
         }
 
         return $instance;

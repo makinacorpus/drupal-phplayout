@@ -48,9 +48,15 @@ function phplayout_menu() {
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::addItemForm'],
   ];
+
+  // More specific callbacks
   $items['layout/callback/edit-item'] = [
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::editItemForm'],
+  ];
+  $items['layout/callback/set-page'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.drupal_layout_controller::setPage'],
   ];
 
   // Add item node selection autocomplete callback.
