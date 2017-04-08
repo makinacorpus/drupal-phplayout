@@ -38,11 +38,19 @@ function phplayout_menu() {
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::remove'],
   ];
+  $items['layout/ajax/move'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.drupal_layout_controller::move'],
+  ];
 
   // Add item form, override or alter this menu entry to change it.
   $items['layout/callback/add-item'] = [
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::addItemForm'],
+  ];
+  $items['layout/callback/edit-item'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.drupal_layout_controller::editItemForm'],
   ];
 
   // Add item node selection autocomplete callback.

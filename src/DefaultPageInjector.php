@@ -108,8 +108,13 @@ class DefaultPageInjector
         if ($this->context->containsEditableLayouts()) {
 
             if ($this->context->hasToken()) {
-                $path = drupal_get_path('module', 'phplayout');
                 drupal_add_library('phplayout', 'edit_basic');
+                drupal_add_js([
+                  'layout' => [
+                    'token'   => $tokenString,
+                    'baseurl' => base_path(),
+                  ]
+                ], 'setting');
             }
 
             if ($event->isFormEnabled()) {

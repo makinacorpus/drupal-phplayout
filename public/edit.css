@@ -5,7 +5,7 @@
 [data-contains]:hover > [data-contains] {
   outline: 1px red dotted;
 }
-.layout-item:hover {
+[data-item]:hover {
   outline: 1px green dotted;
 }
 [data-contains].droppable {

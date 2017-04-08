@@ -36,10 +36,11 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
      *
      * @param ItemInterface $item
      * @param RenderCollection $collection
+     * @param ContainerInterface $parent
      *
      * @return string
      */
-    protected function doRenderChild(ItemInterface $item, RenderCollection $collection) : string
+    protected function doRenderChild(ItemInterface $item, RenderCollection $collection, ContainerInterface $parent = null) : string
     {
         $rendered = $collection->getRenderedItem($item, false);
 
@@ -51,8 +52,10 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
             $rendered = '<p class="text-danger">' . t("Broken or missing item") . '</span>';
         }
 
+        $identifier = $collection->identify($item);
+
         if (!$item instanceof ContainerInterface) {
-            $rendered = '<div data-item>' . $this->renderMenu($item, $this->getItemButtons($item)) . $rendered . '</div>';
+            $rendered = '<div data-id="' . $identifier . '" data-item>' . $this->renderMenu($item, $this->getItemButtons($item, $parent)) . $rendered . '</div>';
         }
 
         return $rendered;
@@ -70,7 +73,7 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
         }
 
         foreach ($container->getAllItems() as $child) {
-            $innerText .= $this->doRenderChild($child, $collection);
+            $innerText .= $this->doRenderChild($child, $collection, $container);
         }
 
         return $this->doRenderTopLevelContainer($container, $innerText, $collection->identify($container));
@@ -88,7 +91,7 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
         }
 
         foreach ($container->getAllItems() as $child) {
-            $innerText .= $this->doRenderChild($child, $collection);
+            $innerText .= $this->doRenderChild($child, $collection, $container);
         }
 
         return $innerText;
@@ -331,9 +334,37 @@ EOT;
         ];
     }
 
-    private function getItemButtons(ItemInterface $item) : array
+    private function getItemButtons(ItemInterface $item, ContainerInterface $parent) : array
     {
         return [
+            $this->renderLink(
+                t('Move to top'),
+                'layout/ajax/move',
+                $this->createOptions($item, [
+                    'itemId' => $item->getStorageId(),
+                    'containerId' => $parent->getStorageId(),
+                    'newPosition' => 0,
+                ]),
+                'chevron-up'
+            ),
+            $this->renderLink(
+                t('Move to bottom'),
+                'layout/ajax/move',
+                $this->createOptions($item, [
+                    'itemId' => $item->getStorageId(),
+                    'containerId' => $parent->getStorageId(),
+                    'newPosition' => $parent->count(),
+                ]),
+                'chevron-down'
+            ),
+            $this->renderLink(
+                t('Options'),
+                'layout/callback/edit-item',
+                $this->createOptions($item, [
+                    'itemId' => $item->getStorageId(),
+                ]),
+                'cog'
+            ),
             $this->renderLink(
                 t('Remove'),
                 'layout/ajax/remove',

@@ -4,6 +4,7 @@ namespace MakinaCorpus\Drupal\Layout\Controller;
 
 use Drupal\Core\Form\FormBuilderInterface;
 use MakinaCorpus\Drupal\Layout\Form\LayoutAddItemForm;
+use MakinaCorpus\Drupal\Layout\Form\LayoutItemOptionsForm;
 use MakinaCorpus\Drupal\Sf\Controller;
 use MakinaCorpus\Drupal\Sf\DrupalResponse;
 use MakinaCorpus\Layout\Controller\Context;
@@ -97,6 +98,19 @@ class LayoutController extends Controller
     }
 
     /**
+     * Edit item form action
+     */
+    public function editItemFormAction(Request $request, string $tokenString, int $layoutId, int $itemId = 0)
+    {
+        $this->controller->loadLayoutOrDie($tokenString, $layoutId);
+
+        $response = new DrupalResponse();
+        $response->setContent($this->drupalFormBuilder->getForm(LayoutItemOptionsForm::class, $tokenString, $layoutId, $itemId));
+
+        return $response;
+    }
+
+    /**
      * Node autocomplete callback
      */
     public function nodeAutocompleteAction(string $string) : Response
@@ -112,11 +126,14 @@ class LayoutController extends Controller
             ->condition('n.title', $escapedString, 'LIKE')
             ->addTag('node_access')
             ->execute()
-            ->fetchAllKeyed()
+            ->fetchAll()
         ;
 
-        foreach ($results as $nid => $title) {
-            $key = check_plain($title) . ' (' . $nid . ')';
+        foreach ($results as $data) {
+
+            $type = node_type_get_name($data->type);
+            $key  = check_plain($type) . ' - ' . check_plain($data->title) . ' (' . $data->nid . ')';
+
             $ret[$key] = $key;
         }
 

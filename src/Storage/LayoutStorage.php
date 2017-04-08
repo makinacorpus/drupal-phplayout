@@ -280,25 +280,49 @@ class LayoutStorage implements LayoutStorageInterface
         }
 
         // Then load and populate their grid
-        // @todo mysql will always null first, but on postgresql we need to
-        //   set "nulls first" onto "parent_id asc nulls first".
-        $items = $this
-            ->database
-            ->query(
-                "
-                    select d.*
-                    from {layout_data} d
-                    where
-                        layout_id in (:list)
-                    order by
-                        layout_id asc,
-                        parent_id asc,
-                        position asc
-                ",
-                [':list' => array_keys($ret)]
-            )
-            ->fetchAll()
-        ;
+        switch ($this->database->driver()) {
+
+            // @todo mysql will always null first, but on postgresql we need to
+            //   set "nulls first" onto "parent_id asc nulls first".
+            case 'mysql':
+                $items = $this
+                    ->database
+                    ->query(
+                        "
+                            select d.*
+                            from {layout_data} d
+                            where
+                                layout_id in (:list)
+                            order by
+                                layout_id asc,
+                                parent_id asc,
+                                position asc
+                        ",
+                        [':list' => array_keys($ret)]
+                    )
+                    ->fetchAll()
+                ;
+                break;
+
+            default:
+                $items = $this
+                    ->database
+                    ->query(
+                        "
+                            select d.*
+                            from {layout_data} d
+                            where
+                                layout_id in (:list)
+                            order by
+                                layout_id asc,
+                                parent_id asc nulls first,
+                                position asc
+                        ",
+                        [':list' => array_keys($ret)]
+                    )
+                    ->fetchAll()
+                ;
+        }
 
         $this->populateLayoutAll($ret, $items);
 
@@ -329,7 +353,7 @@ class LayoutStorage implements LayoutStorageInterface
      *   means we are processing the top level element, in our storage
      *   the top level element is virtual
      */
-    private function updateRecursion(int $layoutId, ItemInterface $item, int $position, array &$done, int $parentId = -1)
+    private function updateRecursion(int $layoutId, ItemInterface $item, int $position, array &$done, int $parentId = 0)
     {
         $id = $item->getStorageId() ?: 0;
 
@@ -339,48 +363,48 @@ class LayoutStorage implements LayoutStorageInterface
         }
 
         // Update the item into database
-        if ($parentId != -1) {
-            if ($item->isPermanent()) {
-                if (!$id) {
-                    throw new GenericError(sprintf("Item cannot be permanent without an identifier"));
-                }
-                if ($item->isUpdated()) {
-                    $options = $item->getOptions();
-                    $this
-                        ->database
-                        ->update('layout_data')
-                        ->fields([
-                            'parent_id' => $parentId ? $parentId : null,
-                            'layout_id' => $layoutId, // not mandatory
-                            'item_type' => $item->getType(),
-                            'item_id'   => $item->getId(),
-                            'style'     => $item->getStyle(),
-                            'position'  => $position,
-                            'options'   => $options ? serialize($options) : null,
-                        ])
-                        ->condition('id', $id)
-                        ->execute()
-                    ;
-                }
-            } else {
-                $options = $item->getOptions();
-                $id = $this
-                    ->database
-                    ->insert('layout_data')
-                    ->fields([
-                        'parent_id' => $parentId ? $parentId : null,
-                        'layout_id' => $layoutId,
-                        'item_type' => $item->getType(),
-                        'item_id'   => $item->getId(),
-                        'style'     => $item->getStyle(),
-                        'position'  => $position,
-                        'options'   => $options ? serialize($options) : null,
-                    ])
-                    ->execute()
-                ;
-
-                $item->setStorageId($layoutId, $id, true);
+        if ($item->isPermanent()) {
+            if (!$id) {
+                throw new GenericError(sprintf("Item cannot be permanent without an identifier"));
             }
+
+            // We do NOT check for updated state, because in case of move
+            // operations, the container is updated but the item is not,
+            // but we must update it anyway to set the new position.
+            $options = $item->getOptions();
+            $this
+                ->database
+                ->update('layout_data')
+                ->fields([
+                    'parent_id' => $parentId ? $parentId : null,
+                    'layout_id' => $layoutId, // not mandatory
+                    'item_type' => $item->getType(),
+                    'item_id'   => $item->getId(),
+                    'style'     => $item->getStyle(),
+                    'position'  => $position,
+                    'options'   => $options ? serialize($options) : null,
+                ])
+                ->condition('id', $id)
+                ->execute()
+            ;
+        } else {
+            $options = $item->getOptions();
+            $id = $this
+                ->database
+                ->insert('layout_data')
+                ->fields([
+                    'parent_id' => $parentId ? $parentId : null,
+                    'layout_id' => $layoutId,
+                    'item_type' => $item->getType(),
+                    'item_id'   => $item->getId(),
+                    'style'     => $item->getStyle(),
+                    'position'  => $position,
+                    'options'   => $options ? serialize($options) : null,
+                ])
+                ->execute()
+            ;
+
+            $item->setStorageId($layoutId, $id, true);
         }
 
         if ($id) {
@@ -412,7 +436,9 @@ class LayoutStorage implements LayoutStorageInterface
         try {
             $transaction = $this->database->startTransaction();
 
-            $this->updateRecursion($layout->getId(), $layout->getTopLevelContainer(), 0, $done);
+            foreach ($layout->getTopLevelContainer()->getAllItems() as $position => $item) {
+                $this->updateRecursion($layout->getId(), $item, $position, $done);
+            }
 
             // Now that we have saved pretty much everything, remove non existing
             // items, all those that have not been traversed.

@@ -317,7 +317,7 @@ EOT;
         // the php-layout library does, just see their documentation for more
         // information.
         $this->createAwesomelyComplexLayout($layout);
-        $topLevelId = 'layout-' . $layout->getId();
+        $topLevelId = $layout->getId();
         $representation = $this->getAwesomelyComplexLayoutRepresentation($topLevelId);
 
         // This just tests the testing helpers, and validate that our layout
@@ -389,7 +389,7 @@ EOT;
         // the php-layout library does, just see their documentation for more
         // information.
         $this->createAwesomelyComplexLayout($layout);
-        $topLevelId = 'layout-' . $layout->getId();
+        $topLevelId = $layout->getId();
         $representation = $this->getAwesomelyComplexLayoutRepresentation($topLevelId);
 
         // This just tests the testing helpers, and validate that our layout

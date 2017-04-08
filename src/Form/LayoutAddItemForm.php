@@ -7,9 +7,7 @@ use Drupal\Core\Form\FormStateInterface;
 use MakinaCorpus\Layout\Controller\Context;
 use MakinaCorpus\Layout\Controller\EditController;
 use MakinaCorpus\Layout\Grid\ItemInterface;
-use MakinaCorpus\Layout\Storage\LayoutInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use MakinaCorpus\Layout\Controller\EditToken;
 
 /**
  * Layout context edit form
@@ -58,6 +56,19 @@ class LayoutAddItemForm extends FormBase
     }
 
     /**
+     * Find all view modes
+     *
+     * @return string[]
+     */
+    private function findViewModes()
+    {
+        return variable_get('phplayout_node_view_modes', [
+            ItemInterface::STYLE_DEFAULT => t("Teaser"),
+            'full' => t("Full"),
+        ]);
+    }
+
+    /**
      * {inheritdoc}
      */
     public function buildForm(array $form, FormStateInterface $formState, string $tokenString = '', int $layoutId = 0, int $containerId = 0, int $position = 0)
@@ -86,10 +97,7 @@ class LayoutAddItemForm extends FormBase
         $form['style'] = [
             '#type'           => 'select',
             '#title'          => t("Style"),
-            '#options'        => [
-                ItemInterface::STYLE_DEFAULT  => t("Teaser"),
-                'full'                        => t("Full"),
-            ],
+            '#options'        => $this->findViewModes(),
             '#default_value'  => ItemInterface::STYLE_DEFAULT,
             '#required'       => true,
         ];

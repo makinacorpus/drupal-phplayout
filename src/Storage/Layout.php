@@ -61,8 +61,8 @@ class Layout extends AbstractLayout
      */
     private function createTopLevelContainer() : TopLevelContainer
     {
-        $instance = new TopLevelContainer('layout-' . $this->id);
-        $instance->setStorageId($this->id, 0, false);
+        $instance = new TopLevelContainer($this->id);
+        $instance->setStorageId($this->id, $this->id, false);
 
         if ($this->region) {
             $options = variable_get('phplayout_region_options', []);

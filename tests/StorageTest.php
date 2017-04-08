@@ -47,7 +47,7 @@ class StorageTest extends AbstractLayoutTest
         // We must always have a top level container
         $container = $layout->getTopLevelContainer();
         $this->assertInstanceOf(TopLevelContainer::class, $container);
-        $this->assertSame('layout-' . $layout->getId(), $container->getId());
+        $this->assertSame($layout->getId(), $container->getId());
 
         // Load it
         $otherLayout = $storage->load($layout->getId());
@@ -55,7 +55,7 @@ class StorageTest extends AbstractLayoutTest
         $this->assertSame($layout->getId(), $otherLayout->getId());
         $otherContainer = $otherLayout->getTopLevelContainer();
         $this->assertInstanceOf(TopLevelContainer::class, $otherContainer);
-        $this->assertSame('layout-' . $otherLayout->getId(), $otherContainer->getId());
+        $this->assertSame($otherLayout->getId(), $otherContainer->getId());
     }
 
     /**
@@ -334,7 +334,7 @@ class StorageTest extends AbstractLayoutTest
         // information.
         $this->createAwesomelyComplexLayout($layout);
 
-        $topLevelId = 'layout-' . $layout->getId();
+        $topLevelId = $layout->getId();
         $representation = <<<EOT
 <vertical id="container:vbox/{$topLevelId}">
     <horizontal id="container:hbox/C1">
