@@ -12,6 +12,19 @@
   min-height: 100px !important;
 }
 
+/* When in edit mode, force menu to NOT be movable also ensures that all
+ * containers have a minimum size to drop more easily */
+[data-contains], [data-id] {
+  position: relative;
+  padding-top: 32px;
+}
+[data-contains] > .layout-menu, [data-id] > .layout-menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
 /*
 *:hover > .layout-menu > a {
   opacity: 1;
