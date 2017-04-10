@@ -25,6 +25,15 @@
   right: 0;
 }
 
+/* Collapse behaviour */
+[data-contains].collapsed, [data-id].collapsed {
+  border-bottom: 2px dashed #e4e4e4;
+}
+[data-contains].collapsed > *:not(.layout-menu), [data-id].collapsed > *:not(.layout-menu) {
+  display: none;
+  visibility: hidden;
+}
+
 /*
 *:hover > .layout-menu > a {
   opacity: 1;

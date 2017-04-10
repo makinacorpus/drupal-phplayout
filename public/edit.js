@@ -12,6 +12,7 @@
 
       var token = settings.layout.token;
       var baseurl = settings.layout.baseurl;
+      var $context = $(context);
 
       // Emulates bootstrap dropdowns.
       $(context).find('.layout-menu').once('layout-menu', function () {
@@ -37,10 +38,16 @@
         });
       });
 
+      // Double click hiding/showing feature.
+      $context.find('.layout-menu').once('drag').on('dblclick', function (event) {
+        event.stopPropagation();
+        event.preventDefault();
+        $(this).parent().toggleClass('collapsed');
+      });
+
       // Go for the drag and drop.
       // @todo disabled for now, there are too many bugs.
       if (dragula) {
-        var $context = $(context);
         $context.find('[data-contains=0]').once('drag', function () {
           // Ensure this is a top level container
           var topLevel = $(this);
