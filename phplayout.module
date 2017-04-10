@@ -94,7 +94,6 @@ function phplayout_library() {
       'title'   => 'DragulaJS',
       'version' => '3.7.2',
       'js'      => [$path . '/dragula-3.7.2/dist/dragula.min.js' => []],
-      'css'     => [$path . '/dragula-3.7.2/dist/dragula.min.css' => $opts],
     ],
   ];
 }

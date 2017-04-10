@@ -12,6 +12,12 @@
   min-height: 100px !important;
 }
 
+/* Disable all links within items, even thought we have JS for that */
+[data-item] *:not(.layout-menu) a {
+   pointer-events: none;
+   cursor: default;
+}
+
 /* When in edit mode, force menu to NOT be movable also ensures that all
  * containers have a minimum size to drop more easily */
 [data-contains], [data-id] {
@@ -155,4 +161,28 @@
   border-width: 0 13px 13px 13px;
   border-color: transparent transparent #e4e4e4 transparent;
   z-index: 1102;
+}
+
+/* Copy/paste of Dragula's CSS to avoid loading it all */
+.gu-mirror {
+  /* position: fixed !important; @todo removed this, it makes it all buggy */
+  margin: 0 !important;
+  z-index: 9999 !important;
+  opacity: 0.8;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
+  filter: alpha(opacity=80);
+}
+.gu-hide {
+  display: none !important;
+}
+.gu-unselectable {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+.gu-transit {
+  opacity: 0.2;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=20)";
+  filter: alpha(opacity=20);
 }

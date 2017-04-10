@@ -29,6 +29,17 @@
         }
       });
 
+      // For the time we are in edit mode, click on inner links must be
+      // disabled, else the user will always accidentally load pages.
+      $context
+        .find('[data-item] *:not(.layout-menu) a')
+        .once('layout-data-a')
+        .addClass('disabled')
+        .on('click', function (event) {
+          event.preventDefault();
+        })
+      ;
+
       $(context).find('.layout-menu > a[disabled=true]').once('layout-a').on('click', function (event) {
         event.preventDefault();
       });
@@ -137,6 +148,12 @@
             });
           });
         });
+
+        // Allow external items to be dropped into regions. For this to work
+        // the external items provider needs to give a few information about
+        // the item: the item type, the item identifier, and optionnaly the
+        // default style to use. All those items will be copy only, and changed
+        // on drop.
       }
     }
   };
