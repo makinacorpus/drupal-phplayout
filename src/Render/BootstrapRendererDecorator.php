@@ -32,15 +32,9 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
     }
 
     /**
-     * Render a single child
-     *
-     * @param ItemInterface $item
-     * @param RenderCollection $collection
-     * @param ContainerInterface $parent
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function doRenderChild(ItemInterface $item, RenderCollection $collection, ContainerInterface $parent = null) : string
+    protected function doRenderChild(ItemInterface $item, RenderCollection $collection, ContainerInterface $parent, int $currentPostion) : string
     {
         $rendered = $collection->getRenderedItem($item, false);
 
@@ -55,7 +49,7 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
         $identifier = $collection->identify($item);
 
         if (!$item instanceof ContainerInterface) {
-            $rendered = '<div data-id="' . $identifier . '" data-item>' . $this->renderMenu($item, $this->getItemButtons($item, $parent)) . $rendered . '</div>';
+            $rendered = '<div data-id="' . $identifier . '" data-item>' . $this->renderMenu($item, $this->getItemButtons($item, $parent, $currentPostion)) . $rendered . '</div>';
         }
 
         return $rendered;
@@ -72,8 +66,8 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
             $innerText = '';
         }
 
-        foreach ($container->getAllItems() as $child) {
-            $innerText .= $this->doRenderChild($child, $collection, $container);
+        foreach ($container->getAllItems() as $position => $child) {
+            $innerText .= $this->doRenderChild($child, $collection, $container, $position);
         }
 
         return $this->doRenderTopLevelContainer($container, $innerText, $collection->identify($container));
@@ -90,8 +84,8 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
             $innerText = '';
         }
 
-        foreach ($container->getAllItems() as $child) {
-            $innerText .= $this->doRenderChild($child, $collection, $container);
+        foreach ($container->getAllItems() as $position => $child) {
+            $innerText .= $this->doRenderChild($child, $collection, $container, $position);
         }
 
         return $innerText;
@@ -127,6 +121,14 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
         return $this->doRenderHorizontalContainer($container, $innerText, $collection->identify($container));
     }
 
+    /**
+     * Render action menu
+     *
+     * @param ItemInterface $item
+     * @param string[] $links
+     *
+     * @return string
+     */
     private function renderMenu(ItemInterface $item, array $links) : string
     {
         if ($item instanceof ColumnContainer) {
@@ -136,7 +138,7 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
         } else if ($item instanceof TopLevelContainer) {
             $title = t("Top level container");
         } else {
-            $title = t("Item");
+            $title = $item->getTitle() ?: t("Item");
         }
         $links = '<li>' . implode('</li><li>', $links) . '</li>';
 
@@ -153,7 +155,23 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
 EOT;
     }
 
-    private function renderLink($title, $route, array $parameters, string $icon = null) : string
+    /**
+     * Render a single action link
+     *
+     * @param string $title
+     *   Link title, must already be localized if necessary
+     * @param string $route
+     *   Framework route
+     * @param string[] $parameters
+     *   Route parameters
+     * @param string $icon
+     *   Link glyphicon identifier
+     * @param bool $disabled
+     *   Is this links disabled
+     *
+     * @return string
+     */
+    private function renderLink(string $title, string $route, array $parameters, string $icon = null, bool $disabled = false) : string
     {
         foreach ($parameters as $name => $value) {
             $search = '{' . $name . '}';
@@ -167,7 +185,14 @@ EOT;
             $title = '<span class="glyphicon glyphicon-' . $icon . '" aria-hidden="true"></span> ' . $title;
         }
 
-        return l($title, $route, ['query' => $parameters, 'html' => true]);
+        $options = ['query' => $parameters, 'html' => true];
+
+        if ($disabled) {
+            $options['attributes']['disabled'] = 'true';
+            $options['attributes']['class'][] = 'disabled';
+        }
+
+        return l($title, $route, $options);
     }
 
     private function createOptions(ItemInterface $item, array $options) : array
@@ -354,7 +379,7 @@ EOT;
         ];
     }
 
-    private function getItemButtons(ItemInterface $item, ContainerInterface $parent) : array
+    private function getItemButtons(ItemInterface $item, ContainerInterface $parent, int $currentPosition) : array
     {
         return [
             $this->renderLink(
@@ -365,7 +390,8 @@ EOT;
                     'containerId' => $parent->getStorageId(),
                     'newPosition' => 0,
                 ]),
-                'chevron-up'
+                'chevron-up',
+                0 === $currentPosition
             ),
             $this->renderLink(
                 t('Move to bottom'),
@@ -375,7 +401,8 @@ EOT;
                     'containerId' => $parent->getStorageId(),
                     'newPosition' => $parent->count(),
                 ]),
-                'chevron-down'
+                'chevron-down',
+                $parent->count() === $currentPosition
             ),
             $this->renderLink(
                 t('Options'),

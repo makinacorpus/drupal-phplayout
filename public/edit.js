@@ -29,6 +29,10 @@
         }
       });
 
+      $(context).find('.layout-menu > a[disabled=true]').once('layout-a').on('click', function (event) {
+        event.preventDefault();
+      });
+
       // Close dropdowns handler
       $(document).click(function (event) {
         dropdownMenus.forEach(function (element) {

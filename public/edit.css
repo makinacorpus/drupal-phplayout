@@ -78,6 +78,11 @@
   font-size: 14px;
   text-decoration: none;
 }
+.layout-menu a.disabled {
+   pointer-events: none;
+   cursor: default;
+   color: #b4b4b4;
+}
 .layout-menu > a > .glyphicon {
   top: 2px;
 }
