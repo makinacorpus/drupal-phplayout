@@ -32,7 +32,7 @@
       // For the time we are in edit mode, click on inner links must be
       // disabled, else the user will always accidentally load pages.
       $context
-        .find('[data-item] *:not(.layout-menu) a')
+        .find('[data-item] div:not(.layout-menu) a')
         .once('layout-data-a')
         .addClass('disabled')
         .on('click', function (event) {

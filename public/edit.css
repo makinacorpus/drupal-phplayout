@@ -13,7 +13,7 @@
 }
 
 /* Disable all links within items, even thought we have JS for that */
-[data-item] *:not(.layout-menu) a {
+[data-item] div:not(.layout-menu) a {
    pointer-events: none;
    cursor: default;
 }
@@ -39,31 +39,6 @@
   display: none;
   visibility: hidden;
 }
-
-/*
-*:hover > .layout-menu > a {
-  opacity: 1;
-}
-.layout-menu {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-.layout-menu > a {
-  opacity: .1;
-  position: relative;
-  padding: 5px;
-  border-radius: 50%;
-  background-clip: padding-box;
-  z-index: 1100;
-  background-color: #222 !important;
-  color: #ccc !important;
-  font-size: 14px;
-}
-.layout-menu > a > .glyphicon {
-  top: 2px;
-}
- */
 
 .layout-menu:hover > a {
   opacity: 1;
