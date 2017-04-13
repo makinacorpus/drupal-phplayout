@@ -34,30 +34,6 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
     /**
      * {@inheritdoc}
      */
-    protected function doRenderChild(ItemInterface $item, RenderCollection $collection, ContainerInterface $parent, int $currentPostion) : string
-    {
-        $rendered = $collection->getRenderedItem($item, false);
-
-        if (!$this->context->hasToken()) {
-            return $rendered;
-        }
-
-        if (!$rendered) {
-            $rendered = '<p class="text-danger">' . t("Broken or missing item") . '</span>';
-        }
-
-        $identifier = $collection->identify($item);
-
-        if (!$item instanceof ContainerInterface) {
-            $rendered = '<div data-id="' . $identifier . '" data-item>' . $this->renderMenu($item, $this->getItemButtons($item, $parent, $currentPostion)) . $rendered . '</div>';
-        }
-
-        return $rendered;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function renderTopLevelContainer(TopLevelContainer $container, RenderCollection $collection) : string
     {
         if ($this->context->hasToken()) {
@@ -67,7 +43,7 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
         }
 
         foreach ($container->getAllItems() as $position => $child) {
-            $innerText .= $this->doRenderChild($child, $collection, $container, $position);
+            $innerText .= $this->renderItem($child, $container, $collection, $position);
         }
 
         return $this->doRenderTopLevelContainer($container, $innerText, $collection->identify($container));
@@ -85,7 +61,7 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
         }
 
         foreach ($container->getAllItems() as $position => $child) {
-            $innerText .= $this->doRenderChild($child, $collection, $container, $position);
+            $innerText .= $this->renderItem($child, $container, $collection, $position);
         }
 
         return $innerText;
@@ -119,6 +95,30 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
         }
 
         return $this->doRenderHorizontalContainer($container, $innerText, $collection->identify($container));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function renderItem(ItemInterface $item, ContainerInterface $parent, RenderCollection $collection, int $position) : string
+    {
+        $rendered = $collection->getRenderedItem($item, false);
+
+        if (!$this->context->hasToken()) {
+            return $rendered;
+        }
+
+        if (!$rendered) {
+            $rendered = '<p class="text-danger">' . t("Broken or missing item") . '</span>';
+        }
+
+        $identifier = $collection->identify($item);
+
+        if (!$item instanceof ContainerInterface) {
+            $rendered = '<div data-id="' . $identifier . '" data-item>' . $this->renderMenu($item, $this->getItemButtons($item, $parent, $position)) . $rendered . '</div>';
+        }
+
+        return $rendered;
     }
 
     /**
