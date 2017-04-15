@@ -8,13 +8,9 @@ services:
     public: false
     class: MakinaCorpus\Layout\Type\ItemTypeRegistry
 
-  php_layout.identifier_strategy:
-    public: false
-    class: MakinaCorpus\Layout\Render\StorageIdentifierStrategy
-
   php_layout.renderer:
     class: MakinaCorpus\Layout\Render\Renderer
-    arguments: ['@php_layout.type_registry', '@php_layout.grid_renderer', '@php_layout.identifier_strategy']
+    arguments: ['@php_layout.type_registry', '@php_layout.grid_renderer']
 
   php_layout.token_generator:
     public: false
@@ -30,6 +26,10 @@ services:
     class: MakinaCorpus\Layout\Controller\EditController
     arguments: ['@php_layout.token_storage', '@php_layout.type_registry', '@php_layout.renderer']
 
+  php_layout.grid_renderer:
+    public: false
+    class: MakinaCorpus\Layout\Render\BootstrapGridRenderer
+
   #
   # Drupal specific or overriden components
   #
@@ -42,10 +42,11 @@ services:
     class: MakinaCorpus\Drupal\Layout\Storage\TokenLayoutStorage
     arguments: ['@database']
 
-  php_layout.grid_renderer:
+  php_layout.grid_renderer_decorator:
     public: false
-    class: MakinaCorpus\Drupal\Layout\Render\BootstrapRendererDecorator
-    arguments: ['@php_layout.context']
+    decorates: php_layout.grid_renderer
+    class: MakinaCorpus\Drupal\Layout\Render\EditRendererDecorator
+    arguments: ['@php_layout.grid_renderer_decorator.inner']
 
   php_layout.drupal_layout_controller:
     public: true
@@ -75,7 +76,7 @@ services:
   php_layout.drupal_page_injector:
     public: true
     class: MakinaCorpus\Drupal\Layout\DefaultPageInjector
-    arguments: ['@php_layout.context', '@database', '@event_dispatcher', '@php_layout.renderer', '@php_layout.storage']
+    arguments: ['@php_layout.context', '@database', '@event_dispatcher', '@php_layout.renderer', '@php_layout.storage', '@php_layout.grid_renderer']
 
   php_layout.collect_layout_event_subscriber:
     public: true

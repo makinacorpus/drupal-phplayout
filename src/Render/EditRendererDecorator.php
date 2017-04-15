@@ -2,109 +2,113 @@
 
 namespace MakinaCorpus\Drupal\Layout\Render;
 
-use MakinaCorpus\Layout\Controller\Context;
+use MakinaCorpus\Layout\Controller\EditToken;
 use MakinaCorpus\Layout\Grid\ColumnContainer;
 use MakinaCorpus\Layout\Grid\ContainerInterface;
 use MakinaCorpus\Layout\Grid\HorizontalContainer;
 use MakinaCorpus\Layout\Grid\ItemInterface;
 use MakinaCorpus\Layout\Grid\TopLevelContainer;
-use MakinaCorpus\Layout\Render\BootstrapGridRenderer;
+use MakinaCorpus\Layout\Render\GridRendererInterface;
 use MakinaCorpus\Layout\Render\RenderCollection;
 
 /**
- * Bootstrap 3 compatible grid renderer.
+ * Decorates another rendererd, and injects edit links when necessary.
  */
-class BootstrapRendererDecorator extends BootstrapGridRenderer
+class EditRendererDecorator implements GridRendererInterface
 {
     /**
-     * @var Context
+     * @var GridRendererInterface
      */
-    private $context;
+    private $nested;
+
+    /**
+     * @var EditToken
+     */
+    private $token;
 
     /**
      * Default constructor
      *
-     * @param Context $context
+     * @param GridRendererInterface $nested
      */
-    public function __construct(Context $context)
+    public function __construct(GridRendererInterface $nested)
     {
-        $this->context = $context;
+        $this->nested = $nested;
+    }
+
+    /**
+     * Allow changing context
+     *
+     * @todo find another way
+     *
+     * @param EditToken $token
+     */
+    public function setCurrentToken(EditToken $token)
+    {
+        $this->token = $token;
+    }
+
+    /**
+     * Drop current token
+     */
+    public function dropToken()
+    {
+        $this->token = null;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function renderTopLevelContainer(TopLevelContainer $container, RenderCollection $collection) : string
+    public function renderTopLevelContainer(TopLevelContainer $container, string $innerHtml) : string
     {
-        if ($this->context->hasToken()) {
-            $innerText = $this->renderMenu($container, $this->getTopLevelContainerButtons($container));
+        if ($this->token) {
+            $addition = $this->renderMenu($container, $this->getTopLevelContainerButtons($container));
         } else {
-            $innerText = '';
+            $addition = '';
         }
 
-        foreach ($container->getAllItems() as $position => $child) {
-            $innerText .= $this->renderItem($child, $container, $collection, $position);
-        }
-
-        return $this->doRenderTopLevelContainer($container, $innerText, $collection->identify($container));
+        return $this->nested->renderTopLevelContainer($container, $addition . $innerHtml);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function renderColumnContainer(ColumnContainer $container, RenderCollection $collection) : string
+    public function renderColumnContainer(ColumnContainer $container, string $innerHtml) : string
     {
-        if ($this->context->hasToken()) {
-            $innerText = $this->renderMenu($container, $this->getColumnButtons($container));
+        if ($this->token) {
+            $addition = $this->renderMenu($container, $this->getColumnButtons($container));
         } else {
-            $innerText = '';
+            $addition = '';
         }
 
-        foreach ($container->getAllItems() as $position => $child) {
-            $innerText .= $this->renderItem($child, $container, $collection, $position);
-        }
-
-        return $innerText;
+        return $this->nested->renderColumnContainer($container, $addition . $innerHtml);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function renderHorizontalContainer(HorizontalContainer $container, RenderCollection $collection) : string
+    public function renderHorizontalContainer(HorizontalContainer $container, array $columnsHtml) : string
     {
-        // Do not display container options if they are children because
-        // they will be merge to each child menu instead
-        if ($this->context->hasToken()) {
-            $innerText = $this->renderMenu($container, $this->getHorizontalButtons($container));
+        if ($this->token) {
+            $addition = $this->renderMenu($container, $this->getHorizontalButtons($container));
         } else {
-            $innerText = '';
+            $addition = '';
         }
 
-        if (!$container->isEmpty()) {
-            $innerContainers = $container->getAllItems();
-            $defaultSize = floor(12 / count($innerContainers));
-
-            foreach ($innerContainers as $child) {
-                $innerText .= $this->doRenderColumn(
-                    $child,
-                    ['md' => $defaultSize],
-                    $collection->getRenderedItem($child),
-                    $collection->identify($child)
-                );
-            }
-        }
-
-        return $this->doRenderHorizontalContainer($container, $innerText, $collection->identify($container));
+        return $this->injectHtml(
+            $this->nested->renderHorizontalContainer($container, $columnsHtml),
+            $addition
+        );
     }
 
     /**
      * {@inheritdoc}
      */
-    public function renderItem(ItemInterface $item, ContainerInterface $parent, RenderCollection $collection, int $position) : string
+    public function renderItem(ItemInterface $item, ContainerInterface $parent, string $innerHtml, int $position) : string
     {
-        $rendered = $collection->getRenderedItem($item, false);
+        $rendered = $this->nested->renderItem($item, $parent, $innerHtml, $position);
 
-        if (!$this->context->hasToken()) {
+        if (!$this->token) {
             return $rendered;
         }
 
@@ -112,13 +116,37 @@ class BootstrapRendererDecorator extends BootstrapGridRenderer
             $rendered = '<p class="text-danger">' . t("Broken or missing item") . '</span>';
         }
 
-        $identifier = $collection->identify($item);
-
         if (!$item instanceof ContainerInterface) {
-            $rendered = '<div data-id="' . $identifier . '" data-item>' . $this->renderMenu($item, $this->getItemButtons($item, $parent, $position)) . $rendered . '</div>';
+            $rendered = '<div data-id="' . $item->getGridIdentifier() . '" data-item>' . $this->renderMenu($item, $this->getItemButtons($item, $parent, $position)) . $rendered . '</div>';
         }
 
         return $rendered;
+    }
+
+    /**
+     * Arbitrary inject HTML into the first div found
+     *
+     * @param string $input
+     *   Rendered HTML item from the nested renderer
+     * @param string $addition
+     *   HTML to inject
+     *
+     * @return string
+     *   Rendered HTML with injected content
+     */
+    private function injectHtml(string $input, string $addition) : string
+    {
+        // @todo
+        //   - do this a better way
+        //   - it might break HTML if there's ">" in the attributes
+
+        $index = strpos($input, '>');
+
+        if (false === $index) {
+            return $addition . $input;
+        }
+
+        return substr_replace($input, $addition, $index + 1, 0);
     }
 
     /**
@@ -195,10 +223,21 @@ EOT;
         return l($title, $route, $options);
     }
 
+    /**
+     * Create edit link options
+     *
+     * @param ItemInterface $item
+     *   Item to work with
+     * @param array $options
+     *   Custom options depending on the link
+     *
+     * @return array
+     *   Options array with token and layout information added
+     */
     private function createOptions(ItemInterface $item, array $options) : array
     {
         return array_merge(drupal_get_destination(), [
-            'tokenString' => $this->context->getCurrentToken()->getToken(),
+            'tokenString' => $this->token->getToken(),
             'layoutId' => $item->getLayoutId(),
         ], $options);
     }

@@ -4,6 +4,7 @@ namespace MakinaCorpus\Drupal\Layout;
 
 use MakinaCorpus\Drupal\Layout\Event\CollectLayoutEvent;
 use MakinaCorpus\Drupal\Layout\Form\LayoutContextEditForm;
+use MakinaCorpus\Drupal\Layout\Render\EditRendererDecorator;
 use MakinaCorpus\Drupal\Layout\Storage\Layout;
 use MakinaCorpus\Layout\Controller\Context;
 use MakinaCorpus\Layout\Error\InvalidTokenError;
@@ -40,6 +41,11 @@ class DefaultPageInjector
     private $renderer;
 
     /**
+     * @var EditRendererDecorator
+     */
+    private $editGridRenderer;
+
+    /**
      * @var LayoutStorageInterface
      */
     private $storage;
@@ -52,19 +58,22 @@ class DefaultPageInjector
      * @param EventDispatcherInterface $eventDispatcher
      * @param Renderer $renderer
      * @param LayoutStorageInterface $storage
+     * @param EditRendererDecorator $editGridRenderer
      */
     public function __construct(
         Context $context,
         \DatabaseConnection $database,
         EventDispatcherInterface $eventDispatcher,
         Renderer $renderer,
-        LayoutStorageInterface $storage
+        LayoutStorageInterface $storage,
+        EditRendererDecorator $editGridRenderer
     ) {
         $this->context  = $context;
         $this->database = $database;
         $this->eventDispatcher = $eventDispatcher;
         $this->renderer = $renderer;
         $this->storage  = $storage;
+        $this->editGridRenderer = $editGridRenderer;
     }
 
     /**
@@ -89,9 +98,11 @@ class DefaultPageInjector
         // Load the token after we did loaded all the layouts, to ensure that
         // their temporary equivalents attached to the token will be reloaded
         // instead.
+        $token = null;
         if ($tokenString = $request->get(PHP_LAYOUT_TOKEN_PARAMETER)) {
             try {
                 $this->context->setCurrentToken($tokenString);
+                $token = $this->context->getCurrentToken();
             } catch (InvalidTokenError $e) {
                 // Fallback on non-edit mode
             }
@@ -102,7 +113,14 @@ class DefaultPageInjector
             if (!$layout instanceof Layout || !($region = $layout->getRegion())) {
                 $region = 'content';
             }
-            $page[$region]['layout'][$layout->getId()] = ['#markup' => $this->renderer->render($layout->getTopLevelContainer())];
+
+            if ($token && $token->contains($layout)) {
+                $this->editGridRenderer->setCurrentToken($token);
+            } else {
+                $this->editGridRenderer->dropToken();
+            }
+
+            $page[$region]['layout'][$layout->getId()] = ['#markup' => $this->renderer->render($layout->getTopLevelContainer(), $this->context)];
         }
 
         if ($this->context->containsEditableLayouts()) {
@@ -110,10 +128,10 @@ class DefaultPageInjector
             if ($this->context->hasToken()) {
                 drupal_add_library('phplayout', 'edit_basic');
                 drupal_add_js([
-                  'layout' => [
-                    'token'   => $tokenString,
-                    'baseurl' => base_path(),
-                  ]
+                    'layout' => [
+                        'token'   => $tokenString,
+                        'baseurl' => base_path(),
+                    ]
                 ], 'setting');
             }
 
