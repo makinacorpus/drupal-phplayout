@@ -9,7 +9,6 @@ use MakinaCorpus\Layout\Grid\HorizontalContainer;
 use MakinaCorpus\Layout\Grid\ItemInterface;
 use MakinaCorpus\Layout\Grid\TopLevelContainer;
 use MakinaCorpus\Layout\Render\GridRendererInterface;
-use MakinaCorpus\Layout\Render\RenderCollection;
 
 /**
  * Decorates another rendererd, and injects edit links when necessary.

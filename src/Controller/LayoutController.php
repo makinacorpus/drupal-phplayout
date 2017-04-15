@@ -85,6 +85,25 @@ class LayoutController extends Controller
     }
 
     /**
+     * Prepare before execute
+     */
+    private function prepareResponse(Request $request, string $tokenString)
+    {
+        // Force context to be set in AJAX queries in order for the rendering
+        // to include all edit links.
+        if ($request->isXmlHttpRequest()) {
+
+          /** @var \MakinaCorpus\Drupal\Layout\Render\EditRendererDecorator $editGridRenderer */
+            $editGridRenderer = $this->get('php_layout.grid_renderer_decorator');
+
+            /** @var \Symfony\Component\Security\Csrf\TokenStorage\TokenStorageInterface $storage */
+            $storage = $this->get('php_layout.token_storage');
+
+            $editGridRenderer->setCurrentToken($storage->loadToken($tokenString));
+        }
+    }
+
+    /**
      * Add item form action
      */
     public function addItemFormAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
@@ -115,6 +134,8 @@ class LayoutController extends Controller
      */
     public function setPageAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
     {
+        $this->prepareResponse($request, $tokenString);
+
         return $this->handleResponse(
             $request,
             $this->controller->addAction($tokenString, $layoutId, $containerId, 'page', 1, $position)
@@ -156,6 +177,8 @@ class LayoutController extends Controller
      */
     public function removeAction(Request $request, string $tokenString, int $layoutId, int $itemId) : Response
     {
+        $this->prepareResponse($request, $tokenString);
+
         return $this->handleResponse(
             $request,
             $this->controller->removeAction($tokenString, $layoutId, $itemId)
@@ -167,6 +190,8 @@ class LayoutController extends Controller
      */
     public function addColumnContainerAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0, int $columnCount = 2, string $style = ItemInterface::STYLE_DEFAULT) : Response
     {
+        $this->prepareResponse($request, $tokenString);
+
         return $this->handleResponse(
             $request,
             $this->controller->addColumnContainerAction($tokenString, $layoutId, $containerId, $position, $columnCount, $style)
@@ -178,6 +203,8 @@ class LayoutController extends Controller
      */
     public function addColumnAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
     {
+        $this->prepareResponse($request, $tokenString);
+
         return $this->handleResponse(
             $request,
             $this->controller->addColumnAction($tokenString, $layoutId, $containerId, $position)
@@ -189,6 +216,8 @@ class LayoutController extends Controller
      */
     public function removeColumnAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
     {
+        $this->prepareResponse($request, $tokenString);
+
         return $this->handleResponse(
             $request,
             $this->controller->removeColumnAction($tokenString, $layoutId, $containerId, $position)
@@ -200,6 +229,8 @@ class LayoutController extends Controller
      */
     public function addAction(Request $request, string $tokenString, int $layoutId, int $containerId, string $itemType, string $itemId, int $position = 0, string $style = ItemInterface::STYLE_DEFAULT) : Response
     {
+        $this->prepareResponse($request, $tokenString);
+
         return $this->handleResponse(
             $request,
             $this->controller->addAction($tokenString, $layoutId, $containerId, $itemType, $itemId, $position, $style)
@@ -211,6 +242,8 @@ class LayoutController extends Controller
      */
     public function moveAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $itemId, int $newPosition) : Response
     {
+        $this->prepareResponse($request, $tokenString);
+
         return $this->handleResponse(
             $request,
             $this->controller->moveAction($tokenString, $layoutId, $containerId, $itemId, $newPosition)
@@ -222,6 +255,8 @@ class LayoutController extends Controller
      */
     public function moveOutsideAction(Request $request, string $tokenString) : Response
     {
+        $this->prepareResponse($request, $tokenString);
+
         return $this->handleResponse(
             $request,
             $this->controller->moveOutsideAction($tokenString)

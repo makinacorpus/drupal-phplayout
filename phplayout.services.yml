@@ -43,7 +43,7 @@ services:
     arguments: ['@database']
 
   php_layout.grid_renderer_decorator:
-    public: false
+    public: true
     decorates: php_layout.grid_renderer
     class: MakinaCorpus\Drupal\Layout\Render\EditRendererDecorator
     arguments: ['@php_layout.grid_renderer_decorator.inner']
@@ -76,7 +76,7 @@ services:
   php_layout.drupal_page_injector:
     public: true
     class: MakinaCorpus\Drupal\Layout\DefaultPageInjector
-    arguments: ['@php_layout.context', '@database', '@event_dispatcher', '@php_layout.renderer', '@php_layout.storage', '@php_layout.grid_renderer']
+    arguments: ['@php_layout.context', '@database', '@event_dispatcher', '@php_layout.renderer', '@php_layout.storage', '@php_layout.grid_renderer_decorator']
 
   php_layout.collect_layout_event_subscriber:
     public: true
