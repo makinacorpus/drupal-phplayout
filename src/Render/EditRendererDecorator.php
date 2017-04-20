@@ -58,6 +58,14 @@ class EditRendererDecorator implements GridRendererInterface
     /**
      * {@inheritdoc}
      */
+    public function getColumnStyles() : array
+    {
+        return $this->nested->getColumnStyles();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function renderTopLevelContainer(TopLevelContainer $container, string $innerHtml) : string
     {
         if ($this->token) {
@@ -250,6 +258,14 @@ EOT;
         // Merge with parent options, visually it's better to hide the parent
         // menu and use its children to replicate its context
         return [
+            $this->renderLink(
+                t('Options'),
+                'layout/callback/edit-item',
+                $this->createOptions($container, [
+                    'itemId' => $container->getStorageId(),
+                ]),
+                'cog'
+            ),
             $this->renderLink(
                 t('Prepend column container'),
                 'layout/ajax/add-column-container',

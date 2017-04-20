@@ -27,7 +27,7 @@ services:
     arguments: ['@php_layout.token_storage', '@php_layout.type_registry', '@php_layout.renderer']
 
   php_layout.grid_renderer:
-    public: false
+    public: true # set to true solely for the d8 form, god I hate them
     class: MakinaCorpus\Layout\Render\BootstrapGridRenderer
 
   #

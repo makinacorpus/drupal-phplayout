@@ -5,11 +5,12 @@ namespace MakinaCorpus\Drupal\Layout\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use MakinaCorpus\Layout\Controller\Context;
-use MakinaCorpus\Layout\Controller\EditController;
-use MakinaCorpus\Layout\Grid\ItemInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use MakinaCorpus\Layout\Storage\TokenLayoutStorageInterface;
 use MakinaCorpus\Layout\Error\GenericError;
+use MakinaCorpus\Layout\Grid\ContainerInterface as LayoutContainerInterface;
+use MakinaCorpus\Layout\Grid\ItemInterface;
+use MakinaCorpus\Layout\Render\GridRendererInterface;
+use MakinaCorpus\Layout\Storage\TokenLayoutStorageInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Layout context edit form
@@ -22,12 +23,19 @@ class LayoutItemOptionsForm extends FormBase
     private $tokenStorage;
 
     /**
+     * @var GridRendererInterface
+     */
+    private $gridRenderer;
+
+    /**
      * {inheritdoc}
      */
     static public function create(ContainerInterface $container)
     {
         return new self(
-            $container->get('php_layout.token_storage'));
+            $container->get('php_layout.token_storage'),
+            $container->get('php_layout.grid_renderer')
+        );
     }
 
     /**
@@ -35,9 +43,10 @@ class LayoutItemOptionsForm extends FormBase
      *
      * @param TokenLayoutStorageInterface $tokenStorage
      */
-    public function __construct(TokenLayoutStorageInterface $tokenStorage)
+    public function __construct(TokenLayoutStorageInterface $tokenStorage, GridRendererInterface $gridRenderer)
     {
         $this->tokenStorage = $tokenStorage;
+        $this->gridRenderer = $gridRenderer;
     }
 
     /**
@@ -78,18 +87,27 @@ class LayoutItemOptionsForm extends FormBase
         }
 
         // @todo for now only nodes are supported
-        $formState->setTemporaryValue('item_type', 'node');
         $formState->setTemporaryValue('token', $tokenString);
         $formState->setTemporaryValue('layout', $layout);
         $formState->setTemporaryValue('item', $item);
 
-        $form['style'] = [
-            '#type'           => 'select',
-            '#title'          => t("Style"),
-            '#options'        => $this->findViewModes(),
-            '#default_value'  => $item->getStyle(),
-            '#required'       => true,
-        ];
+        if ('node' === $item->getType()) {
+            $form['style'] = [
+                '#type'           => 'select',
+                '#title'          => t("Style"),
+                '#options'        => $this->findViewModes(),
+                '#default_value'  => $item->getStyle(),
+                '#required'       => true,
+            ];
+        } else if (LayoutContainerInterface::VERTICAL_CONTAINER === $item->getType()) {
+            $form['style'] = [
+                '#type'           => 'select',
+                '#title'          => t("Style"),
+                '#options'        => $this->gridRenderer->getColumnStyles(),
+                '#default_value'  => $item->getStyle(),
+                '#required'       => true,
+            ];
+        }
 
         $form['actions'] = [
             '#type' => 'actions',
