@@ -35,6 +35,7 @@
         "phpunit/phpunit" : "^5"
     },
     "require" : {
+        "makinacorpus/drupal-dragula" : "^1",
         "makinacorpus/drupal-plusql" : "^1",
         "makinacorpus/drupal-sf-dic" : "^3.2",
         "makinacorpus/php-layout" : "*",

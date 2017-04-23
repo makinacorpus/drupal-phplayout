@@ -3,5 +3,6 @@ description = PHP Layout library support, brings page composition capacity to Dr
 core = 7.x
 package = Utility
 php = 7.0
+dependencies[] = dragula
 dependencies[] = plusql
 dependencies[] = sf_dic

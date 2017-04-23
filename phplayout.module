@@ -88,12 +88,7 @@ function phplayout_library() {
       'version' => '1.0',
       'js'      => [$path . '/edit.js' => []],
       'css'     => [$path . '/edit.css' => $opts],
-      'dependencies' => [['phplayout', 'dragula']],
-    ],
-    'dragula' => [
-      'title'   => 'DragulaJS',
-      'version' => '3.7.2',
-      'js'      => [$path . '/dragula-3.7.2/dist/dragula.min.js' => []],
+      'dependencies' => [['dragula', 'dragula']],
     ],
   ];
 }

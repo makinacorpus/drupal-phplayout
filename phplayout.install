@@ -170,7 +170,7 @@ function phplayout_schema() {
  * Implements hook_install().
  */
 function phplayout_install() {
-  db_constraint_fix_processed('phplayout');
+  // db_constraint_fix_processed('phplayout');
 }
 
 /**
