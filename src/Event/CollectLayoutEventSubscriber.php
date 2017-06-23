@@ -42,7 +42,7 @@ final class CollectLayoutEventSubscriber implements EventSubscriberInterface
      */
     public function onCollectLayout(CollectLayoutEvent $event)
     {
-        if (arg(0) !== 'node' && arg(2)) {
+        if (arg(0) !== 'node' || arg(2)) {
             return [];
         }
         if (!$node = menu_get_object()) {
