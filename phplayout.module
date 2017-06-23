@@ -3,9 +3,6 @@
  * PHP Layout Drupal module hook definitions and module placeholder.
  */
 
-use MakinaCorpus\Drupal\Layout\Storage\Layout;
-use MakinaCorpus\Layout\Grid\Item;
-
 /**
  * Layout edit token get parameter name
  */
