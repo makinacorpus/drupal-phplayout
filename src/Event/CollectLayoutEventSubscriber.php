@@ -3,7 +3,6 @@
 namespace MakinaCorpus\Drupal\Layout\Event;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use MakinaCorpus\Drupal\Layout\Event\CollectLayoutEvent;
 
 /**
  * Adds layout edit actions and form to UI.
