@@ -15,7 +15,7 @@ drush -y en phplayout
 Default configuration will automatically provide a single layout for each node
 in the ``content`` region, for further configuration, you may want to
 implement a Symfony event plugged on the
-``MakinaCorpus\Drupal\Layout\Event\CollectLayoutEvent::EVENT_NAME``
+``MakinaCorpus\Layout\EventDispatcher\CollectLayoutEvent::EVENT_NAME``
 event in order to change the layout discovery and loading business logic.
 
 # Runtime configuration

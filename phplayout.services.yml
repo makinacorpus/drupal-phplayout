@@ -1,85 +1,67 @@
+# Drupal specific or overriden components
 services:
 
-  #
-  # Generic PHP-Layout API configuration
-  #
+    #
+    # Core API
+    #
 
-  php_layout.type_registry:
-    public: false
-    class: MakinaCorpus\Layout\Type\ItemTypeRegistry
+    php_layout.storage:
+        class: MakinaCorpus\Drupal\Layout\Storage\LayoutStorage
+        arguments: ['@database', '@php_layout.type_registry']
 
-  php_layout.renderer:
-    class: MakinaCorpus\Layout\Render\Renderer
-    arguments: ['@php_layout.type_registry', '@php_layout.grid_renderer']
+    php_layout.token_storage:
+        class: MakinaCorpus\Drupal\Layout\Storage\TokenLayoutStorage
+        arguments: ['@database']
 
-  php_layout.token_generator:
-    public: false
-    class: MakinaCorpus\Layout\Controller\DefaultTokenGenerator
+    php_layout.grid_renderer_decorator:
+        decorates: php_layout.grid_renderer
+        class: MakinaCorpus\Drupal\Layout\Render\EditRendererDecorator
+        arguments: ['@php_layout.grid_renderer_decorator.inner']
 
-  php_layout.context:
-    class: MakinaCorpus\Layout\Controller\Context
-    arguments: ['@php_layout.storage', '@php_layout.token_storage', '@php_layout.token_generator']
+    php_layout.drupal_layout_controller:
+        public: true
+        class: MakinaCorpus\Drupal\Layout\Controller\LayoutController
+        arguments: ['@form_builder', '@database', '@php_layout.grid_renderer_decorator', '@php_layout.renderer', '@php_layout.type_registry']
 
-  php_layout.edit_controller:
-    # @todo this should not be public, but the Drupal form needs it
-    # public: false
-    class: MakinaCorpus\Layout\Controller\EditController
-    arguments: ['@php_layout.token_storage', '@php_layout.type_registry', '@php_layout.renderer']
+    #
+    # Item types
+    #
 
-  php_layout.grid_renderer:
-    public: true # set to true solely for the d8 form, god I hate them
-    class: MakinaCorpus\Layout\Render\BootstrapGridRenderer
+    php_layout.type.drupal_node:
+        public: false
+        class: MakinaCorpus\Drupal\Layout\Type\NodeType
+        arguments: ['@entity.manager']
+        tags: [{name: php_layout.type}]
 
-  #
-  # Drupal specific or overriden components
-  #
+    php_layout.type.drupal_page:
+        public: false
+        class: MakinaCorpus\Drupal\Layout\Type\PageContentType
+        arguments: ['@entity.manager']
+        tags: [{name: php_layout.type}]
 
-  php_layout.storage:
-    class: MakinaCorpus\Drupal\Layout\Storage\LayoutStorage
-    arguments: ['@database', '@php_layout.type_registry']
+    #
+    # Helpers and Drupal business logic
+    #
 
-  php_layout.token_storage:
-    class: MakinaCorpus\Drupal\Layout\Storage\TokenLayoutStorage
-    arguments: ['@database']
+    php_layout.drupal_page_injector:
+        public: true
+        class: MakinaCorpus\Drupal\Layout\DefaultPageInjector
+        arguments: ['@php_layout.context', '@php_layout.renderer', '@php_layout.grid_renderer_decorator']
 
-  php_layout.grid_renderer_decorator:
-    public: true
-    decorates: php_layout.grid_renderer
-    class: MakinaCorpus\Drupal\Layout\Render\EditRendererDecorator
-    arguments: ['@php_layout.grid_renderer_decorator.inner']
+    php_layout.collect_layout_event_subscriber:
+        public: true
+        class: MakinaCorpus\Drupal\Layout\Event\CollectLayoutEventSubscriber
+        arguments: ['@database']
+        tags: [{name: event_subscriber}]
 
-  php_layout.drupal_layout_controller:
-    public: true
-    class: MakinaCorpus\Drupal\Layout\Controller\LayoutController
-    arguments: ['@php_layout.edit_controller', '@form_builder', '@php_layout.context', '@database']
+    php_layout.context_pane_event_subscriber:
+        public: true
+        class: MakinaCorpus\Drupal\Layout\Event\ContextPaneEventSubscriber
+        arguments: ['@php_layout.admin_layout_controller', '@php_layout.context']
+        tags: [{name: event_subscriber}]
 
-  #
-  # Drupal item types
-  #
-
-  php_layout.type.drupal_node:
-    public: false
-    class: MakinaCorpus\Drupal\Layout\Type\NodeType
-    arguments: ['@entity.manager']
-    tags: [{name: php_layout.type}]
-
-  php_layout.type.drupal_page:
-    public: false
-    class: MakinaCorpus\Drupal\Layout\Type\PageContentType
-    arguments: ['@entity.manager']
-    tags: [{name: php_layout.type}]
-
-  #
-  # Pure Drupal helpers
-  #
-
-  php_layout.drupal_page_injector:
-    public: true
-    class: MakinaCorpus\Drupal\Layout\DefaultPageInjector
-    arguments: ['@php_layout.context', '@database', '@event_dispatcher', '@php_layout.renderer', '@php_layout.storage', '@php_layout.grid_renderer_decorator']
-
-  php_layout.collect_layout_event_subscriber:
-    public: true
-    class: MakinaCorpus\Drupal\Layout\Event\CollectLayoutEventSubscriber
-    arguments: ['@database']
-    tags: [{name: event_subscriber}]
+    php_layout.admin_layout_controller:
+        public: true
+        class: MakinaCorpus\Drupal\Layout\Controller\AdminController
+        arguments: ['@php_layout.context']
+        calls: [[setContainer, ['@service_container']]]

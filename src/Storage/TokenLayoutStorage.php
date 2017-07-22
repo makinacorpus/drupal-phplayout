@@ -2,7 +2,7 @@
 
 namespace MakinaCorpus\Drupal\Layout\Storage;
 
-use MakinaCorpus\Layout\Controller\EditToken;
+use MakinaCorpus\Layout\Context\EditToken;
 use MakinaCorpus\Layout\Error\InvalidTokenError;
 use MakinaCorpus\Layout\Grid\ContainerInterface;
 use MakinaCorpus\Layout\Grid\ItemInterface;
@@ -184,6 +184,20 @@ class TokenLayoutStorage implements TokenLayoutStorageInterface
             ->merge('layout_token_layout')
             ->key(['token' => $token, 'layout_id' => $layout->getId()])
             ->fields(['data' => serialize($layout)])
+            ->execute()
+        ;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function remove(string $token, int $id)
+    {
+        $this
+            ->database
+            ->delete('layout_token_layout')
+            ->condition('token', $token)
+            ->condition('layout_id', $id)
             ->execute()
         ;
     }

@@ -5,65 +5,44 @@ namespace MakinaCorpus\Drupal\Layout\Controller;
 use Drupal\Core\Form\FormBuilderInterface;
 use MakinaCorpus\Drupal\Layout\Form\LayoutAddItemForm;
 use MakinaCorpus\Drupal\Layout\Form\LayoutItemOptionsForm;
-use MakinaCorpus\Drupal\Sf\Controller;
+use MakinaCorpus\Drupal\Layout\Render\EditRendererDecorator;
 use MakinaCorpus\Drupal\Sf\DrupalResponse;
-use MakinaCorpus\Layout\Controller\Context;
+use MakinaCorpus\Layout\Context\Context;
+use MakinaCorpus\Layout\Context\EditToken;
 use MakinaCorpus\Layout\Controller\EditController;
-use MakinaCorpus\Layout\Grid\ItemInterface;
+use MakinaCorpus\Layout\Storage\LayoutInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use MakinaCorpus\Layout\Type\ItemTypeRegistry;
+use MakinaCorpus\Layout\Render\Renderer;
 
 /**
  * Drupal oriented layout actions controller
  */
-class LayoutController extends Controller
+class LayoutController extends EditController
 {
-    /**
-     * @var EditController
-     */
-    private $controller;
-
-    /**
-     * @var FormBuilderInterface
-     */
     private $drupalFormBuilder;
-
-    /**
-     * @var Context
-     */
-    private $context;
-
-    /**
-     * @var \DatabaseConnection
-     */
     private $database;
+    private $editGridRenderer;
 
     /**
      * Default constructor
      */
-    public function __construct(
-        EditController $controller,
-        FormBuilderInterface $drupalFormBuilder,
-        Context $context,
-        \DatabaseConnection $database)
+    public function __construct(FormBuilderInterface $drupalFormBuilder, \DatabaseConnection $database, EditRendererDecorator $editGridRenderer, Renderer $renderer, ItemTypeRegistry $typeRegistry)
     {
-        $this->controller = $controller;
+        parent::__construct($typeRegistry, $renderer);
+
         $this->drupalFormBuilder = $drupalFormBuilder;
-        $this->context = $context;
         $this->database = $database;
+        $this->editGridRenderer = $editGridRenderer;
     }
 
     /**
-     * Handle edit controller response
-     *
-     * @param Request $request
-     * @param array $ret
-     *
-     * @return Response
+     * {@inheritdoc}
      */
-    private function handleResponse(Request $request, array $ret) : Response
+    protected function handleResponse(Request $request, array $ret)
     {
         if ($request->isXmlHttpRequest()) {
             return new JsonResponse($ret);
@@ -85,33 +64,24 @@ class LayoutController extends Controller
     }
 
     /**
-     * Prepare before execute
+     * {@inheritdoc}
      */
-    private function prepareResponse(Request $request, string $tokenString)
+    protected function prepareResponse(Request $request, Context $context, EditToken $token)
     {
         // Force context to be set in AJAX queries in order for the rendering
         // to include all edit links.
         if ($request->isXmlHttpRequest()) {
-
-          /** @var \MakinaCorpus\Drupal\Layout\Render\EditRendererDecorator $editGridRenderer */
-            $editGridRenderer = $this->get('php_layout.grid_renderer_decorator');
-
-            /** @var \Symfony\Component\Security\Csrf\TokenStorage\TokenStorageInterface $storage */
-            $storage = $this->get('php_layout.token_storage');
-
-            $editGridRenderer->setCurrentToken($storage->loadToken($tokenString));
+            $this->editGridRenderer->setCurrentToken($context->getToken());
         }
     }
 
     /**
      * Add item form action
      */
-    public function addItemFormAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
+    public function addItemFormAction(Request $request, Context $context, LayoutInterface $layout, int $containerId, int $position = 0) : Response
     {
-        $this->controller->loadLayoutOrDie($tokenString, $layoutId);
-
         $response = new DrupalResponse();
-        $response->setContent($this->drupalFormBuilder->getForm(LayoutAddItemForm::class, $tokenString, $layoutId, $containerId, $position));
+        $response->setContent($this->drupalFormBuilder->getForm(LayoutAddItemForm::class, $context, $layout, $containerId, $position));
 
         return $response;
     }
@@ -119,12 +89,10 @@ class LayoutController extends Controller
     /**
      * Edit item form action
      */
-    public function editItemFormAction(Request $request, string $tokenString, int $layoutId, int $itemId = 0)
+    public function editItemFormAction(Request $request, Context $context, LayoutInterface $layout, int $itemId = 0)
     {
-        $this->controller->loadLayoutOrDie($tokenString, $layoutId);
-
         $response = new DrupalResponse();
-        $response->setContent($this->drupalFormBuilder->getForm(LayoutItemOptionsForm::class, $tokenString, $layoutId, $itemId));
+        $response->setContent($this->drupalFormBuilder->getForm(LayoutItemOptionsForm::class, $context, $layout, $itemId));
 
         return $response;
     }
@@ -132,14 +100,9 @@ class LayoutController extends Controller
     /**
      * Set page content here action
      */
-    public function setPageAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
+    public function setPageAction(Request $request, Context $context, EditToken $token, LayoutInterface $layout, int $containerId, int $position = 0) : Response
     {
-        $this->prepareResponse($request, $tokenString);
-
-        return $this->handleResponse(
-            $request,
-            $this->controller->addAction($tokenString, $layoutId, $containerId, 'page', 1, $position)
-        );
+        return $this->addAction($request, $context, $token, $layout, $containerId, 'page', 1, $position);
     }
 
     /**
@@ -170,96 +133,5 @@ class LayoutController extends Controller
         }
 
         return new JsonResponse($ret);
-    }
-
-    /**
-     * Remove item action
-     */
-    public function removeAction(Request $request, string $tokenString, int $layoutId, int $itemId) : Response
-    {
-        $this->prepareResponse($request, $tokenString);
-
-        return $this->handleResponse(
-            $request,
-            $this->controller->removeAction($tokenString, $layoutId, $itemId)
-        );
-    }
-
-    /**
-     * Add horizontal container action
-     */
-    public function addColumnContainerAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0, int $columnCount = 2, string $style = ItemInterface::STYLE_DEFAULT) : Response
-    {
-        $this->prepareResponse($request, $tokenString);
-
-        return $this->handleResponse(
-            $request,
-            $this->controller->addColumnContainerAction($tokenString, $layoutId, $containerId, $position, $columnCount, $style)
-        );
-    }
-
-    /**
-     * Add column action
-     */
-    public function addColumnAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
-    {
-        $this->prepareResponse($request, $tokenString);
-
-        return $this->handleResponse(
-            $request,
-            $this->controller->addColumnAction($tokenString, $layoutId, $containerId, $position)
-        );
-    }
-
-    /**
-     * Remove column action
-     */
-    public function removeColumnAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $position = 0) : Response
-    {
-        $this->prepareResponse($request, $tokenString);
-
-        return $this->handleResponse(
-            $request,
-            $this->controller->removeColumnAction($tokenString, $layoutId, $containerId, $position)
-        );
-    }
-
-    /**
-     * Add item action
-     */
-    public function addAction(Request $request, string $tokenString, int $layoutId, int $containerId, string $itemType, string $itemId, int $position = 0, string $style = ItemInterface::STYLE_DEFAULT) : Response
-    {
-        $this->prepareResponse($request, $tokenString);
-
-        return $this->handleResponse(
-            $request,
-            $this->controller->addAction($tokenString, $layoutId, $containerId, $itemType, $itemId, $position, $style)
-        );
-    }
-
-    /**
-     * Move item action
-     */
-    public function moveAction(Request $request, string $tokenString, int $layoutId, int $containerId, int $itemId, int $newPosition) : Response
-    {
-        $this->prepareResponse($request, $tokenString);
-
-        return $this->handleResponse(
-            $request,
-            $this->controller->moveAction($tokenString, $layoutId, $containerId, $itemId, $newPosition)
-        );
-    }
-
-    /**
-     * Move item to another layout action
-     */
-    public function moveOutsideAction(Request $request, string $tokenString) : Response
-    {
-        $this->prepareResponse($request, $tokenString);
-
-        return $this->handleResponse(
-            $request,
-            $this->controller->moveOutsideAction($tokenString)
-        );
     }
 }

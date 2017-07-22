@@ -2,8 +2,7 @@
 
 namespace MakinaCorpus\Drupal\Layout\Tests;
 
-use MakinaCorpus\Drupal\Layout\Storage\Layout;
-use MakinaCorpus\Layout\Controller\EditToken;
+use MakinaCorpus\Layout\Context\EditToken;
 use MakinaCorpus\Layout\Error\InvalidTokenError;
 use MakinaCorpus\Layout\Grid\ContainerInterface;
 use MakinaCorpus\Layout\Grid\HorizontalContainer;
@@ -44,16 +43,15 @@ class TokenStorageTest extends AbstractLayoutTest
         $layout1 = $storage->create();
         $layout2 = $storage->create();
 
-        $context->add([$layout1], true);
-        $context->add([$layout2], false);
-        $token = $context->createEditToken(['user_id' => 17]);
+        $context->addLayoutList([$layout1->getId(), $layout2->getId()]);
+        $token = $context->createEditToken([$layout1->getId()], ['user_id' => 17]);
 
         // Later on...
         $newToken = $tokenStorage->loadToken($token->getToken());
         $this->assertInstanceOf(EditToken::class, $newToken);
         $this->assertSame($token->getToken(), $newToken->getToken());
-        $this->assertTrue($newToken->contains($layout1));
-        $this->assertFalse($newToken->contains($layout2));
+        $this->assertTrue($newToken->contains($layout1->getId()));
+        $this->assertFalse($newToken->contains($layout2->getId()));
     }
 
     /**
@@ -63,7 +61,7 @@ class TokenStorageTest extends AbstractLayoutTest
     {
         $context = $this->createPageContext();
         $tokenStorage = $this->createTokenStorage();
-        $token = $context->createEditToken(['user_id' => 17]);
+        $token = $context->createEditToken([], ['user_id' => 17]);
         $tokenString = $token->getToken();
 
         // Seems stupid, but actually we can load nothing
@@ -93,9 +91,8 @@ class TokenStorageTest extends AbstractLayoutTest
         $layout2 = $storage->create();
         $layout3 = $storage->create();
 
-        $context->add([$layout1, $layout3], true);
-        $context->add([$layout2], false);
-        $token = $context->createEditToken(['user_id' => 17]);
+        $context->addLayoutList([$layout1->getId(), $layout2->getId(), $layout3->getId()]);
+        $token = $context->createEditToken([$layout1->getId(), $layout3->getId()], ['user_id' => 17]);
         $tokenString = $token->getToken();
         $tokenStorage->saveToken($token);
 
@@ -137,6 +134,46 @@ class TokenStorageTest extends AbstractLayoutTest
     /**
      * Delete method works (and SQL data is wiped-out)
      */
+    public function testRemove()
+    {
+        $context = $this->createPageContext();
+        $storage = $this->createStorage();
+        $tokenStorage = $this->createTokenStorage();
+
+        $layout1 = $storage->create();
+        $layout2 = $storage->create();
+        $layout3 = $storage->create();
+
+        $context->addLayoutList([$layout1->getId(), $layout2->getId(), $layout3->getId()]);
+        $token = $context->createEditToken([$layout1->getId(), $layout3->getId()], ['user_id' => 17]);
+        $tokenString = $token->getToken();
+        $tokenStorage->saveToken($token);
+
+        // Save our editable instances
+        $tokenStorage->update($tokenString, $layout1);
+        $tokenStorage->update($tokenString, $layout3);
+
+        // And now remove one layout
+        $tokenStorage->remove($tokenString, $layout2->getId());
+        $this->assertTrue($token->contains($layout1->getId()));
+        $this->assertFalse($token->contains($layout2->getId()));
+        $this->assertTrue($token->contains($layout3->getId()));
+
+        try {
+            $tokenStorage->load($tokenString, $layout2->getId());
+            $this->fail();
+        } catch (InvalidTokenError $e) {
+            $this->assertTrue(true);
+        }
+
+        // And the other two still work
+        $tokenStorage->load($tokenString, $layout1->getId());
+        $tokenStorage->load($tokenString, $layout3->getId());
+    }
+
+    /**
+     * Delete method works (and SQL data is wiped-out)
+     */
     public function testDelete()
     {
         $context = $this->createPageContext();
@@ -147,9 +184,8 @@ class TokenStorageTest extends AbstractLayoutTest
         $layout2 = $storage->create();
         $layout3 = $storage->create();
 
-        $context->add([$layout1, $layout3], true);
-        $context->add([$layout2], false);
-        $token = $context->createEditToken(['user_id' => 17]);
+        $context->addLayoutList([$layout1->getId(), $layout2->getId(), $layout3->getId()]);
+        $token = $context->createEditToken([$layout1->getId(), $layout3->getId()], ['user_id' => 17]);
         $tokenString = $token->getToken();
         $tokenStorage->saveToken($token);
 
@@ -257,41 +293,41 @@ class TokenStorageTest extends AbstractLayoutTest
     private function getAwesomelyComplexLayoutRepresentation(string $topLevelId)
     {
         return <<<EOT
-<vertical id="container:vbox/{$topLevelId}">
-    <horizontal id="container:hbox/C1">
-        <column id="container:vbox/C11">
-            <item id="leaf:a/1"/>
-            <item id="leaf:b/4"/>
+<vertical id="{$topLevelId}">
+    <horizontal id="hbox-C1">
+        <column id="vbox-C11">
+            <item id="a-1"/>
+            <item id="b-4"/>
         </column>
-        <column id="container:vbox/C12">
-            <horizontal id="container:hbox/C2">
-                <column id="container:vbox/C21">
-                    <item id="leaf:a/2" />
-                    <item id="leaf:a/5" />
+        <column id="vbox-C12">
+            <horizontal id="hbox-C2">
+                <column id="vbox-C21">
+                    <item id="a-2" />
+                    <item id="a-5" />
                 </column>
-                <column id="container:vbox/C22">
-                    <item id="leaf:b/3" />
+                <column id="vbox-C22">
+                    <item id="b-3" />
                 </column>
             </horizontal>
         </column>
     </horizontal>
-    <horizontal id="container:hbox/C3">
-        <column id="container:vbox/C31">
-            <item id="leaf:a/6" />
-            <item id="leaf:a/9" />
+    <horizontal id="hbox-C3">
+        <column id="vbox-C31">
+            <item id="a-6" />
+            <item id="a-9" />
         </column>
-        <column id="container:vbox/C32">
-            <item id="leaf:b/7" />
-            <item id="leaf:b/10" />
+        <column id="vbox-C32">
+            <item id="b-7" />
+            <item id="b-10" />
         </column>
-        <column id="container:vbox/C33">
-            <item id="leaf:b/8" />
-            <item id="leaf:b/11" />
-            <item id="leaf:a/1" />
+        <column id="vbox-C33">
+            <item id="b-8" />
+            <item id="b-11" />
+            <item id="a-1" />
         </column>
     </horizontal>
-    <item id="leaf:a/12" />
-    <item id="leaf:b/7" />
+    <item id="a-12" />
+    <item id="b-7" />
 </vertical>
 EOT;
     }
@@ -339,21 +375,21 @@ EOT;
 
         // Remove a few elements, compare to a new representation
         $representation = <<<EOT
-<vertical id="container:vbox/{$topLevelId}">
-    <horizontal id="container:hbox/C1">
-        <column id="container:vbox/C11">
-            <item id="leaf:b/4"/>
+<vertical id="{$topLevelId}">
+    <horizontal id="hbox-C1">
+        <column id="vbox-C11">
+            <item id="b-4"/>
         </column>
-        <column id="container:vbox/C12">
-            <horizontal id="container:hbox/C2">
-                <column id="container:vbox/C21">
-                    <item id="leaf:a/2" />
-                    <item id="leaf:a/5" />
+        <column id="vbox-C12">
+            <horizontal id="hbox-C2">
+                <column id="vbox-C21">
+                    <item id="a-2" />
+                    <item id="a-5" />
                 </column>
             </horizontal>
         </column>
     </horizontal>
-    <item id="leaf:b/7" />
+    <item id="b-7" />
 </vertical>
 EOT;
         $otherLayout->getTopLevelContainer()->removeAt(1);

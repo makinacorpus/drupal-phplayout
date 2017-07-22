@@ -40,6 +40,28 @@ function phplayout_menu() {
     'page arguments' => ['php_layout.drupal_layout_controller::move'],
   ];
 
+  // Token control actions
+  $items['layout/callback/control/edit-one'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.admin_layout_controller::editSingle'],
+  ];
+  $items['layout/callback/control/commit-one'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.admin_layout_controller::commitSingle'],
+  ];
+  $items['layout/callback/control/rollback-one'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.admin_layout_controller::rollbackSingle'],
+  ];
+  $items['layout/callback/control/commit'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.admin_layout_controller::commitAll'],
+  ];
+  $items['layout/callback/control/rollback'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.admin_layout_controller::rollbackAll'],
+  ];
+
   // Add item form, override or alter this menu entry to change it.
   $items['layout/callback/add-item'] = [
     'page callback' => 'sf_dic_page',

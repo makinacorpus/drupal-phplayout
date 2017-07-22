@@ -47,7 +47,7 @@ class StorageTest extends AbstractLayoutTest
         // We must always have a top level container
         $container = $layout->getTopLevelContainer();
         $this->assertInstanceOf(TopLevelContainer::class, $container);
-        $this->assertSame($layout->getId(), $container->getId());
+        $this->assertSame($layout->getId(), (int)$container->getId());
 
         // Load it
         $otherLayout = $storage->load($layout->getId());
@@ -55,7 +55,7 @@ class StorageTest extends AbstractLayoutTest
         $this->assertSame($layout->getId(), $otherLayout->getId());
         $otherContainer = $otherLayout->getTopLevelContainer();
         $this->assertInstanceOf(TopLevelContainer::class, $otherContainer);
-        $this->assertSame($otherLayout->getId(), $otherContainer->getId());
+        $this->assertSame($otherLayout->getId(), (int)$otherContainer->getId());
     }
 
     /**
@@ -336,41 +336,41 @@ class StorageTest extends AbstractLayoutTest
 
         $topLevelId = $layout->getId();
         $representation = <<<EOT
-<vertical id="container:vbox/{$topLevelId}">
-    <horizontal id="container:hbox/C1">
-        <column id="container:vbox/C11">
-            <item id="leaf:a/1"/>
-            <item id="leaf:b/4"/>
+<vertical id="{$topLevelId}">
+    <horizontal id="C1">
+        <column id="C11">
+            <item id="a-1"/>
+            <item id="b-4"/>
         </column>
-        <column id="container:vbox/C12">
-            <horizontal id="container:hbox/C2">
-                <column id="container:vbox/C21">
-                    <item id="leaf:a/2" />
-                    <item id="leaf:a/5" />
+        <column id="C12">
+            <horizontal id="C2">
+                <column id="C21">
+                    <item id="a-2" />
+                    <item id="a-5" />
                 </column>
-                <column id="container:vbox/C22">
-                    <item id="leaf:b/3" />
+                <column id="C22">
+                    <item id="b-3" />
                 </column>
             </horizontal>
         </column>
     </horizontal>
-    <horizontal id="container:hbox/C3">
-        <column id="container:vbox/C31">
-            <item id="leaf:a/6" />
-            <item id="leaf:a/9" />
+    <horizontal id="C3">
+        <column id="C31">
+            <item id="a-6" />
+            <item id="a-9" />
         </column>
-        <column id="container:vbox/C32">
-            <item id="leaf:b/7" />
-            <item id="leaf:b/10" />
+        <column id="C32">
+            <item id="b-7" />
+            <item id="b-10" />
         </column>
-        <column id="container:vbox/C33">
-            <item id="leaf:b/8" />
-            <item id="leaf:b/11" />
-            <item id="leaf:a/1" />
+        <column id="C33">
+            <item id="b-8" />
+            <item id="b-11" />
+            <item id="a-1" />
         </column>
     </horizontal>
-    <item id="leaf:a/12" />
-    <item id="leaf:b/7" />
+    <item id="a-12" />
+    <item id="b-7" />
 </vertical>
 EOT;
 
@@ -399,21 +399,21 @@ EOT;
 
         // Remove a few elements, compare to a new representation
         $representation = <<<EOT
-<vertical id="container:vbox/{$topLevelId}">
-    <horizontal id="container:hbox/C1">
-        <column id="container:vbox/C11">
-            <item id="leaf:b/4"/>
+<vertical id="{$topLevelId}">
+    <horizontal id="C1">
+        <column id="C11">
+            <item id="b-4"/>
         </column>
-        <column id="container:vbox/C12">
-            <horizontal id="container:hbox/C2">
-                <column id="container:vbox/C21">
-                    <item id="leaf:a/2" />
-                    <item id="leaf:a/5" />
+        <column id="C12">
+            <horizontal id="C2">
+                <column id="C21">
+                    <item id="a-2" />
+                    <item id="a-5" />
                 </column>
             </horizontal>
         </column>
     </horizontal>
-    <item id="leaf:b/7" />
+    <item id="b-7" />
 </vertical>
 EOT;
         $otherLayout->getTopLevelContainer()->removeAt(1);

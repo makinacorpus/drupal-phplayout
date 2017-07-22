@@ -158,8 +158,8 @@
                   drake.cancel(true);
                 },
                 data: {
-                  tokenString: token,
-                  layoutId: layoutId,
+                  "layout-edit": token,
+                  layout: layoutId,
                   containerId: containerId,
                   itemId: itemId,
                   newPosition: position
@@ -275,8 +275,8 @@
                   drake.cancel(true);
                 },
                 data: {
-                  tokenString: token,
-                  layoutId: layoutId,
+                  "layout-edit": token,
+                  layout: layoutId,
                   containerId: containerId,
                   itemType: itemType,
                   itemId: itemId,

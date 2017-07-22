@@ -4,9 +4,11 @@ namespace MakinaCorpus\Drupal\Layout\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use MakinaCorpus\Layout\Controller\Context;
+use MakinaCorpus\Layout\Context\Context;
+use MakinaCorpus\Layout\Context\EditToken;
 use MakinaCorpus\Layout\Controller\EditController;
 use MakinaCorpus\Layout\Grid\ItemInterface;
+use MakinaCorpus\Layout\Storage\LayoutInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -71,16 +73,16 @@ class LayoutAddItemForm extends FormBase
     /**
      * {inheritdoc}
      */
-    public function buildForm(array $form, FormStateInterface $formState, string $tokenString = '', int $layoutId = 0, int $containerId = 0, int $position = 0)
+    public function buildForm(array $form, FormStateInterface $formState, EditToken $token = null, LayoutInterface $layout = null, int $containerId = 0, int $position = 0)
     {
-        if (!$tokenString || !$layoutId || !$containerId) {
+        if (!$token || !$layout || !$containerId) {
             return $form;
         }
 
         // @todo for now only nodes are supported
         $formState->setTemporaryValue('item_type', 'node');
-        $formState->setTemporaryValue('token', $tokenString);
-        $formState->setTemporaryValue('layout_id', $layoutId);
+        $formState->setTemporaryValue('token', $token);
+        $formState->setTemporaryValue('layout', $layout);
         $formState->setTemporaryValue('container_id', $containerId);
         $formState->setTemporaryValue('position', $position);
 
@@ -125,8 +127,8 @@ class LayoutAddItemForm extends FormBase
     public function addItemSubmit(array &$form, FormStateInterface $formState)
     {
         // Okay now breath
-        $tokenString  = $formState->getTemporaryValue('token');
-        $layoutId     = $formState->getTemporaryValue('layout_id');
+        $token        = $formState->getTemporaryValue('token');
+        $layout       = $formState->getTemporaryValue('layout');
         $containerId  = $formState->getTemporaryValue('container_id');
         $itemType     = $formState->getTemporaryValue('item_type');
         $itemId       = null;
@@ -142,7 +144,7 @@ class LayoutAddItemForm extends FormBase
         }
         $itemId = $matches[1];
 
-        $ret = $this->editController->addAction($tokenString, $layoutId, $containerId, $itemType, $itemId, $position, $style);
+        $ret = $this->editController->addAction($token, $layout, $containerId, $itemType, $itemId, $position, $style);
 
         if (empty($ret['success'])) {
             drupal_set_message(t("Wrong input"));

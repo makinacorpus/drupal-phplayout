@@ -3,12 +3,11 @@
 namespace MakinaCorpus\Drupal\Layout\Tests;
 
 use Drupal\node\NodeInterface;
-use MakinaCorpus\Drupal\Layout\Storage\Layout;
 use MakinaCorpus\Drupal\Layout\Storage\LayoutStorage;
 use MakinaCorpus\Drupal\Layout\Storage\TokenLayoutStorage;
 use MakinaCorpus\Drupal\Sf\Tests\AbstractDrupalTest;
-use MakinaCorpus\Layout\Controller\Context;
-use MakinaCorpus\Layout\Controller\DefaultTokenGenerator;
+use MakinaCorpus\Layout\Context\Context;
+use MakinaCorpus\Layout\Context\DefaultTokenGenerator;
 use MakinaCorpus\Layout\Storage\LayoutStorageInterface;
 use MakinaCorpus\Layout\Storage\TokenLayoutStorageInterface;
 use MakinaCorpus\Layout\Tests\Unit\ComparisonTestTrait;
@@ -58,7 +57,7 @@ abstract class AbstractLayoutTest extends AbstractDrupalTest
      */
     protected function createPageContext() : Context
     {
-        return new Context($this->createStorage(), $this->createTokenStorage(), new DefaultTokenGenerator());
+        return new Context($this->createStorage(), $this->createTokenStorage(), null, null, new DefaultTokenGenerator());
     }
 
     /**
@@ -74,7 +73,7 @@ abstract class AbstractLayoutTest extends AbstractDrupalTest
     /**
      * Creates the tested storage instance
      *
-     * @return TemporaryLayoutStorage
+     * @return TokenLayoutStorageInterface
      */
     protected function createTokenStorage() : TokenLayoutStorageInterface
     {

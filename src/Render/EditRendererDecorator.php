@@ -2,7 +2,7 @@
 
 namespace MakinaCorpus\Drupal\Layout\Render;
 
-use MakinaCorpus\Layout\Controller\EditToken;
+use MakinaCorpus\Layout\Context\EditToken;
 use MakinaCorpus\Layout\Grid\ColumnContainer;
 use MakinaCorpus\Layout\Grid\ContainerInterface;
 use MakinaCorpus\Layout\Grid\HorizontalContainer;
@@ -244,8 +244,8 @@ EOT;
     private function createOptions(ItemInterface $item, array $options) : array
     {
         return array_merge(drupal_get_destination(), [
-            'tokenString' => $this->token->getToken(),
-            'layoutId' => $item->getLayoutId(),
+            PHP_LAYOUT_TOKEN_PARAMETER => $this->token->getToken(),
+            'layout' => $item->getLayoutId(),
         ], $options);
     }
 

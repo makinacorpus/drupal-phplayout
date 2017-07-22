@@ -2,6 +2,7 @@
 
 namespace MakinaCorpus\Drupal\Layout\Event;
 
+use MakinaCorpus\Layout\EventDispatcher\CollectLayoutEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
@@ -50,15 +51,12 @@ final class CollectLayoutEventSubscriber implements EventSubscriberInterface
 
         $layoutIdList = $this->database->query("select id from {layout} where node_id = ?", [$node->nid])->fetchCol();
 
-        if ($layoutIdList) {
-            $layouts = $event->getLayoutStorage()->loadMultiple($layoutIdList);
-        } else {
+        if (!$layoutIdList) {
             // Automatically creates new layout for node if none exist
-            $layouts = [$event->getLayoutStorage()->create(['node_id' => $node->nid])];
+            $layoutIdList = [$event->getContext()->getLayoutStorage()->create(['node_id' => $node->nid])->getId()];
         }
 
-        foreach ($layouts as $layout) {
-            $event->addLayout($layout, true);
-        }
+        $event->addLayoutList($layoutIdList);
+        // @todo set editable status from here?
     }
 }

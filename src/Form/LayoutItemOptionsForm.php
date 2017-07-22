@@ -4,11 +4,12 @@ namespace MakinaCorpus\Drupal\Layout\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use MakinaCorpus\Layout\Controller\Context;
+use MakinaCorpus\Layout\Context\EditToken;
 use MakinaCorpus\Layout\Error\GenericError;
 use MakinaCorpus\Layout\Grid\ContainerInterface as LayoutContainerInterface;
 use MakinaCorpus\Layout\Grid\ItemInterface;
 use MakinaCorpus\Layout\Render\GridRendererInterface;
+use MakinaCorpus\Layout\Storage\LayoutInterface;
 use MakinaCorpus\Layout\Storage\TokenLayoutStorageInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -73,21 +74,21 @@ class LayoutItemOptionsForm extends FormBase
     /**
      * {inheritdoc}
      */
-    public function buildForm(array $form, FormStateInterface $formState, string $tokenString = '', int $layoutId = 0, int $itemId = 0)
+    public function buildForm(array $form, FormStateInterface $formState, EditToken $token = null, LayoutInterface $layout = null, int $itemId = 0)
     {
-        if (!$tokenString || !$layoutId || !$itemId) {
+        if (!$token || !$layout || !$itemId) {
             return $form;
         }
 
         try {
-            $layout = $this->tokenStorage->load($tokenString, $layoutId);
+            $layout = $this->tokenStorage->load($token->getToken(), $layout->getId());
             $item   = $layout->findItem($itemId);
         } catch (GenericError $e) {
             return;
         }
 
         // @todo for now only nodes are supported
-        $formState->setTemporaryValue('token', $tokenString);
+        $formState->setTemporaryValue('token', $token);
         $formState->setTemporaryValue('layout', $layout);
         $formState->setTemporaryValue('item', $item);
 
@@ -131,14 +132,14 @@ class LayoutItemOptionsForm extends FormBase
      */
     public function addItemSubmit(array &$form, FormStateInterface $formState)
     {
-        $tokenString  = $formState->getTemporaryValue('token');
-        $layout       = $formState->getTemporaryValue('layout');
-        $item         = $formState->getTemporaryValue('item');
+        $token  = $formState->getTemporaryValue('token');
+        $layout = $formState->getTemporaryValue('layout');
+        $item   = $formState->getTemporaryValue('item');
 
         /** @var \MakinaCorpus\Layout\Grid\ItemInterface $item */
         $item->setStyle($formState->getValue('style'));
 
-        $this->tokenStorage->update($tokenString, $layout);
+        $this->tokenStorage->update($token->getToken(), $layout);
     }
 
     /**
