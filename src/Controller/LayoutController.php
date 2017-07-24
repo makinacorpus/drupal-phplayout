@@ -10,13 +10,13 @@ use MakinaCorpus\Drupal\Sf\DrupalResponse;
 use MakinaCorpus\Layout\Context\Context;
 use MakinaCorpus\Layout\Context\EditToken;
 use MakinaCorpus\Layout\Controller\EditController;
+use MakinaCorpus\Layout\Render\Renderer;
 use MakinaCorpus\Layout\Storage\LayoutInterface;
+use MakinaCorpus\Layout\Type\ItemTypeRegistry;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use MakinaCorpus\Layout\Type\ItemTypeRegistry;
-use MakinaCorpus\Layout\Render\Renderer;
 
 /**
  * Drupal oriented layout actions controller

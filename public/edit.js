@@ -90,6 +90,7 @@
 
       var token = settings.layout.token;
       var baseurl = settings.layout.baseurl;
+      var destination = settings.layout.destination;
       var $context = $(context);
 
       // Go for the drag and drop.
@@ -162,7 +163,8 @@
                   layout: layoutId,
                   containerId: containerId,
                   itemId: itemId,
-                  newPosition: position
+                  newPosition: position,
+                  destination: destination
                 }
               });
             });
@@ -281,7 +283,8 @@
                   itemType: itemType,
                   itemId: itemId,
                   position: position,
-                  style: itemStyle
+                  style: itemStyle,
+                  destination: destination
                 }
               });
             });

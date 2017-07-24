@@ -71,6 +71,7 @@ class DefaultPageInjector
                     'layout' => [
                         'token'   => $token->getToken(),
                         'baseurl' => base_path(),
+                        'destination' => drupal_get_destination()['destination'],
                     ]
                 ], 'setting');
             }
