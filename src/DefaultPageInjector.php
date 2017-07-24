@@ -49,7 +49,7 @@ class DefaultPageInjector
         }
 
         // Working multiple pass version
-        foreach ($this->context->getAllLayouts() as $layout) {
+        foreach ($this->context->getPageLayouts() as $layout) {
             if (!$layout instanceof Layout || !($region = $layout->getRegion())) {
                 $region = 'content';
             }

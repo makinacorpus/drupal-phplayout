@@ -89,10 +89,10 @@ class LayoutController extends EditController
     /**
      * Edit item form action
      */
-    public function editItemFormAction(Request $request, Context $context, LayoutInterface $layout, int $itemId = 0)
+    public function editItemFormAction(Request $request, Context $context, EditToken $token, LayoutInterface $layout, int $itemId = 0)
     {
         $response = new DrupalResponse();
-        $response->setContent($this->drupalFormBuilder->getForm(LayoutItemOptionsForm::class, $context, $layout, $itemId));
+        $response->setContent($this->drupalFormBuilder->getForm(LayoutItemOptionsForm::class, $context, $token, $layout, $itemId));
 
         return $response;
     }

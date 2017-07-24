@@ -4,13 +4,13 @@ namespace MakinaCorpus\Drupal\Layout\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use MakinaCorpus\Layout\Context\Context;
 use MakinaCorpus\Layout\Context\EditToken;
 use MakinaCorpus\Layout\Error\GenericError;
 use MakinaCorpus\Layout\Grid\ContainerInterface as LayoutContainerInterface;
 use MakinaCorpus\Layout\Grid\ItemInterface;
 use MakinaCorpus\Layout\Render\GridRendererInterface;
 use MakinaCorpus\Layout\Storage\LayoutInterface;
-use MakinaCorpus\Layout\Storage\TokenLayoutStorageInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -18,11 +18,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class LayoutItemOptionsForm extends FormBase
 {
-    /**
-     * @var TokenLayoutStorageInterface
-     */
-    private $tokenStorage;
-
     /**
      * @var GridRendererInterface
      */
@@ -34,19 +29,15 @@ class LayoutItemOptionsForm extends FormBase
     static public function create(ContainerInterface $container)
     {
         return new self(
-            $container->get('php_layout.token_storage'),
             $container->get('php_layout.grid_renderer')
         );
     }
 
     /**
      * Default constructor
-     *
-     * @param TokenLayoutStorageInterface $tokenStorage
      */
-    public function __construct(TokenLayoutStorageInterface $tokenStorage, GridRendererInterface $gridRenderer)
+    public function __construct(GridRendererInterface $gridRenderer)
     {
-        $this->tokenStorage = $tokenStorage;
         $this->gridRenderer = $gridRenderer;
     }
 
@@ -74,24 +65,19 @@ class LayoutItemOptionsForm extends FormBase
     /**
      * {inheritdoc}
      */
-    public function buildForm(array $form, FormStateInterface $formState, EditToken $token = null, LayoutInterface $layout = null, int $itemId = 0)
+    public function buildForm(array $form, FormStateInterface $formState, Context $context = null, EditToken $token = null, LayoutInterface $layout = null, int $itemId = 0)
     {
-        if (!$token || !$layout || !$itemId) {
+        if (!$context || !$token || !$layout || !$itemId) {
             return $form;
         }
 
         try {
-            $layout = $this->tokenStorage->load($token->getToken(), $layout->getId());
-            $item   = $layout->findItem($itemId);
+            $item = $layout->findItem($itemId);
         } catch (GenericError $e) {
             return;
         }
 
         // @todo for now only nodes are supported
-        $formState->setTemporaryValue('token', $token);
-        $formState->setTemporaryValue('layout', $layout);
-        $formState->setTemporaryValue('item', $item);
-
         if ('node' === $item->getType()) {
             $form['style'] = [
                 '#type'           => 'select',
@@ -115,46 +101,21 @@ class LayoutItemOptionsForm extends FormBase
             'submit' => [
                 '#type'   => 'submit',
                 '#value'  => t("Save options"),
-                '#submit' => ['::addItemSubmit'],
+                '#submit' => [
+                    function (array &$form, FormStateInterface $formState) use ($context, $token, $layout, $item) {
+                        /** @var \MakinaCorpus\Layout\Grid\ItemInterface $item */
+                        $item->setStyle($formState->getValue('style'));
+                        $context->getTokenStorage()->update($token->getToken(), $layout);
+                    },
+                ],
             ],
             'cancel' => [
                 '#type'   => 'submit',
                 '#value'  => t("Cancel"),
-                '#submit' => ['::cancelSubmit'],
+                '#submit' => [function () {}],
             ],
         ];
 
         return $form;
-    }
-
-    /**
-     * {inheritdoc}
-     */
-    public function addItemSubmit(array &$form, FormStateInterface $formState)
-    {
-        $token  = $formState->getTemporaryValue('token');
-        $layout = $formState->getTemporaryValue('layout');
-        $item   = $formState->getTemporaryValue('item');
-
-        /** @var \MakinaCorpus\Layout\Grid\ItemInterface $item */
-        $item->setStyle($formState->getValue('style'));
-
-        $this->tokenStorage->update($token->getToken(), $layout);
-    }
-
-    /**
-     * {inheritdoc}
-     */
-    public function cancelSubmit(array &$form, FormStateInterface $formState)
-    {
-        // Do nothing, let the form redirect upon the destination parameter.
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function submitForm(array &$form, FormStateInterface $formState)
-    {
-        // This will never be called.
     }
 }
