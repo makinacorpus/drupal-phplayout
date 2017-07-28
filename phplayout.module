@@ -9,6 +9,11 @@
 const PHP_LAYOUT_TOKEN_PARAMETER = 'layout-edit';
 
 /**
+ * Edit all permission
+ */
+const PHP_LAYOUT_PERMISSION_EDIT_ALL = 'edit all layouts';
+
+/**
  * Implements hook_menu().
  */
 function phplayout_menu() {
@@ -85,6 +90,18 @@ function phplayout_menu() {
   ];
 
   return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function phplayout_permission() {
+  return [
+    PHP_LAYOUT_PERMISSION_EDIT_ALL => [
+      'title'       => t("Edit all layouts"),
+      "description" => t("Users with this permission can edit all layouts."),
+    ],
+  ];
 }
 
 /**

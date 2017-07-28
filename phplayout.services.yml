@@ -65,3 +65,18 @@ services:
         class: MakinaCorpus\Drupal\Layout\Controller\AdminController
         arguments: ['@php_layout.context']
         calls: [[setContainer, ['@service_container']]]
+
+    #
+    # Security voters
+    #
+
+    php_layout.layout_permission_voter:
+        public: false
+        class: MakinaCorpus\Drupal\Layout\Security\LayoutPermissionVoter
+        tags: [{name: security.voter}]
+
+    php_layout.layout_node_voter:
+        public: false
+        class: MakinaCorpus\Drupal\Layout\Security\LayoutNodeVoter
+        arguments: ['@entity.manager']
+        tags: [{name: security.voter}]
