@@ -39,7 +39,7 @@ class AdminController extends Controller
         $route = $request->get('from');
 
         if (!$route) {
-            throw new $this->createNotFoundException();
+            throw $this->createNotFoundException();
         }
 
         if ($token) {
