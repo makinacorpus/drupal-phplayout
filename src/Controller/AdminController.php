@@ -146,7 +146,15 @@ class AdminController extends Controller
                     $nodeId = $layout->getNodeId();
 
                     if ($nodeId) {
-                        $data['title'] = $this->t("Page content");
+                        if ($region = $layout->getRegion()) {
+                            $names = system_region_list($GLOBALS['theme']);
+                            if (isset($names[$region])) {
+                                $region = $names[$region];
+                            }
+                            $data['title'] = $region;
+                        } else {
+                            $data['title'] = $this->t("Page content");
+                        }
                     }
                 }
 
