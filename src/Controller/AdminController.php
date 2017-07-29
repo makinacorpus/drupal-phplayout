@@ -154,12 +154,17 @@ class AdminController extends Controller
             }
         }
 
+        $destination = $request->attributes->get('_route');
+        if (empty($destination)) {
+            $destination = '<front>';
+        }
+
         return $this->render('module:phplayout:templates/layout-summary.html.twig', [
             'layouts'       => $layouts,
             'token'         => $token ? $token->getToken() : null,
             'editableCount' => $editableCount,
             'csrfToken'     => drupal_get_token(),
-            'destination'   => $request->attributes->get('_route'),
+            'destination'   => $destination,
         ]);
     }
 }
