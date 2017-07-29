@@ -261,8 +261,9 @@ class LayoutStorage implements LayoutStorageInterface
         // First load layouts
         $result = $this
             ->database
+            // https://stackoverflow.com/questions/28404107/how-do-i-get-the-column-alias-in-postgres-in-camelcase-instead-of-lowercase-wit
             ->query(
-                "select id, node_id as nodeId, site_id as siteId, region from {layout} where id in (:list)",
+                'select id, node_id as "nodeId", site_id as "siteId", region from {layout} where id in (:list)',
                 [':list' => $idList],
                 ['fetch' => Layout::class]
             )
