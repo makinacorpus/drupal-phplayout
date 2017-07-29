@@ -31,7 +31,7 @@ class LayoutNodeVoter implements VoterInterface
             ($user = $token->getUser()) &&
             $user instanceof DrupalUser &&
             ($node = $this->entityManager->getStorage('node')->load($nodeId)) &&
-            $node->access('edit', $user->getDrupalAccount())
+            $node->access('update', $user->getDrupalAccount())
         ) {
             return self::ACCESS_GRANTED;
         }
