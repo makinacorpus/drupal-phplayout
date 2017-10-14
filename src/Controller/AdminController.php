@@ -57,13 +57,11 @@ class AdminController extends Controller
         $this->checkCsrfToken($request);
 
         if ($context->hasToken()) {
-            $token = $context->getCurrentToken();
-            $context->addLayoutToCurrentToken(addLayoutToCurrentToken);
+            $token = $context->getToken();
+            $context->addLayout($layout->getId());
         } else {
             $token = $context->createEditToken([$layout->getId()]);
         }
-
-        // @todo switch to edit mode for the asked layout
 
         return $this->createRedirect($request, $context, $token);
     }

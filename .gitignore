@@ -3,5 +3,8 @@
 .settings
 composer.lock
 coverage
+node_modules
 phpunit.xml
+public/edit.css.map
+public/edit.js.map
 vendor

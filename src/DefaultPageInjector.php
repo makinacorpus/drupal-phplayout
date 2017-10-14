@@ -2,9 +2,9 @@
 
 namespace MakinaCorpus\Drupal\Layout;
 
-use MakinaCorpus\Drupal\Layout\Render\EditRendererDecorator;
 use MakinaCorpus\Drupal\Layout\Storage\Layout;
 use MakinaCorpus\Layout\Context\Context;
+use MakinaCorpus\Layout\Render\EditRendererDecorator;
 use MakinaCorpus\Layout\Render\Renderer;
 use Symfony\Component\HttpFoundation\Request;
 

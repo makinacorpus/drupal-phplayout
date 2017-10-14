@@ -1,5 +1,7 @@
+
 /* Matches hovered containers */
 [data-container]:hover,
+/* Following rule matches columns */
 [data-container]:hover > [data-container] {
   outline: 1px red dotted;
 }
@@ -9,6 +11,7 @@
 [data-container].droppable {
   min-height: 100px !important;
 }
+
 /* Disable all links within items, even thought we have JS for that */
 [data-item-id] a {
   pointer-events: none;
@@ -23,6 +26,7 @@
 [data-item-id]:not([data-id]) {
   cursor: copy;
 }
+
 /* When in edit mode, force menu to NOT be movable also ensures that all
  * containers have a minimum size to drop more easily */
 [data-container],
@@ -37,6 +41,7 @@
   left: 0;
   right: 0;
 }
+
 /* Collapse behaviour */
 [data-container].collapsed,
 [data-id].collapsed {
@@ -47,6 +52,7 @@
   display: none;
   visibility: hidden;
 }
+
 .layout-menu:hover > a {
   opacity: 1;
   color: #5a5a5a;
@@ -67,13 +73,14 @@
   text-decoration: none;
 }
 .layout-menu a.disabled {
-  pointer-events: none;
-  cursor: default;
-  color: #b4b4b4;
+   pointer-events: none;
+   cursor: default;
+   color: #b4b4b4;
 }
 .layout-menu > a > .glyphicon {
   top: 2px;
 }
+
 .layout-menu > a:focus {
   outline: 0;
 }
@@ -96,7 +103,7 @@
   -moz-border-radius: 4px;
   -webkit-border-radius: 4px;
   border-radius: 4px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+  box-shadow: 0 6px 12px rgba(0,0,0,.175);
   background-clip: padding-box;
   right: auto;
   left: 50%;
@@ -115,6 +122,7 @@
 .layout-menu > ul > li > a:hover {
   text-decoration: none;
 }
+
 /* Just for fun */
 .layout-menu > ul:after {
   content: "";
@@ -142,5 +150,3 @@
   border-color: transparent transparent #e4e4e4 transparent;
   z-index: 1102;
 }
-
-/*# sourceMappingURL=edit.css.map*/

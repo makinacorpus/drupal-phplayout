@@ -32,10 +32,6 @@ function phplayout_menu() {
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::add'],
   ];
-  $items['layout/ajax/remove-column'] = [
-    'page callback' => 'sf_dic_page',
-    'page arguments' => ['php_layout.drupal_layout_controller::removeColumn'],
-  ];
   $items['layout/ajax/remove'] = [
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::remove'],

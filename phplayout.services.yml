@@ -15,7 +15,7 @@ services:
 
     php_layout.grid_renderer_decorator:
         decorates: php_layout.grid_renderer
-        class: MakinaCorpus\Drupal\Layout\Render\EditRendererDecorator
+        class: MakinaCorpus\Layout\Render\EditRendererDecorator
         arguments: ['@php_layout.grid_renderer_decorator.inner']
 
     php_layout.drupal_layout_controller:

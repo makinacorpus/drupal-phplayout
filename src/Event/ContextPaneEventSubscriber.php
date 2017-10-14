@@ -5,8 +5,8 @@ namespace MakinaCorpus\Drupal\Layout\Event;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use MakinaCorpus\Drupal\Calista\EventDispatcher\ContextPaneEvent;
 use MakinaCorpus\Drupal\Layout\Controller\AdminController;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use MakinaCorpus\Layout\Context\Context;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class ContextPaneEventSubscriber implements EventSubscriberInterface
 {
