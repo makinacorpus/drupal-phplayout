@@ -130,16 +130,9 @@ var ContainerType;
     ContainerType["Horizontal"] = "hbox";
     ContainerType["Layout"] = "Layout";
 })(ContainerType = exports.ContainerType || (exports.ContainerType = {}));
-function getLayout(element) {
-    if (element.hasAttribute("data-token") || !element.hasAttribute("data-layout-id") || !element.hasAttribute("data-id")) {
-        return new Container(element.getAttribute("data-id"), element.getAttribute("data-container"), element, element.getAttribute("data-token"), element.getAttribute("data-id"));
-    }
-    throw "element is not a container, or is not initialized properly";
-}
-exports.getLayout = getLayout;
 function getContainer(element) {
-    if (element.hasAttribute("data-token") || !element.hasAttribute("data-layout-id") || !element.hasAttribute("data-id")) {
-        return new Container(element.getAttribute("data-id"), element.getAttribute("data-container"), element, element.getAttribute("data-token"), element.getAttribute("data-layout-id"));
+    if (element.hasAttribute("data-token") || element.hasAttribute("data-layout-id") || element.hasAttribute("data-id")) {
+        return new Container(element.getAttribute("data-id"), element.getAttribute("data-container"), element, element.getAttribute("data-token"), (element.getAttribute("data-layout-id") || element.getAttribute("data-id")));
     }
     throw "element is not a container, or is not initialized properly";
 }
@@ -488,10 +481,20 @@ var State = (function () {
         this.handler = handler;
         this.drake = dragula({
             copy: function (element, source) {
-                return item_1.getContainer(source).readonly || item_1.getItem(element).readonly;
+                try {
+                    return item_1.getContainer(source).readonly || item_1.getItem(element).readonly;
+                }
+                catch (error) {
+                    return false;
+                }
             },
             accepts: function (element, target) {
-                return !item_1.getContainer(target).readonly;
+                try {
+                    return !item_1.getContainer(target).readonly;
+                }
+                catch (error) {
+                    return false;
+                }
             },
             invalid: function (element) {
                 var current = element;
@@ -546,22 +549,23 @@ var State = (function () {
     State.prototype.onDrop = function (element, target, source, sibling) {
         var _this = this;
         try {
-            var container = item_1.getContainer(target);
+            var container_1 = item_1.getContainer(target);
             var item = item_1.getItem(element);
-            if (container.readonly) {
+            if (container_1.readonly) {
                 throw "container is readonly";
             }
             if (item.readonly) {
-                this.handler.addItem(container.token, container.layoutId, container.id, item.type, item.id, item.getPosition())
+                this.handler.addItem(container_1.token, container_1.layoutId, container_1.id, item.type, item.id, item.getPosition())
                     .then(function (item) {
                     element.parentElement.replaceChild(item, element);
-                    _this.init(element);
+                    _this.initItem(item, container_1);
+                    _this.init(item);
                 }).catch(function (error) {
                     _this.cancel(error, element);
                 });
             }
             else {
-                this.handler.moveItem(container.token, container.layoutId, container.id, item.id, item.getPosition())
+                this.handler.moveItem(container_1.token, container_1.layoutId, container_1.id, item.id, item.getPosition())
                     .catch(function (error) {
                     _this.cancel(error, element);
                 });
@@ -580,8 +584,6 @@ var State = (function () {
             return;
         }
         if (!element.hasAttribute("data-container") || !element.hasAttribute("data-id")) {
-            console.log("not a container");
-            console.log(element);
             return;
         }
         element.setAttribute("data-token", parent.token);
@@ -599,8 +601,6 @@ var State = (function () {
             return;
         }
         if (!element.hasAttribute("data-item-id")) {
-            console.log("not an item");
-            console.log(element);
             return;
         }
         var item = item_1.getItem(element);
@@ -634,7 +634,7 @@ var State = (function () {
             if (!element.hasAttribute("data-token") || !element.hasAttribute("data-id")) {
                 continue;
             }
-            var layout = item_1.getLayout(element);
+            var layout = item_1.getContainer(element);
             element.setAttribute("droppable", "1");
             this.drake.containers.push(layout.element);
             this.collectItems(layout);

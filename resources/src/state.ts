@@ -1,6 +1,6 @@
 
 import { Drake } from "dragula";
-import { Container, ContainerType, getContainer, getItem, getLayout } from "./item";
+import { Container, ContainerType, getContainer, getItem } from "./item";
 import { createMenu } from "./ui/menu";
 import { LayoutHandler } from "./handler";
 
@@ -14,10 +14,18 @@ export class State {
 
         this.drake = dragula({
             copy: (element: Element, source: Element): boolean => {
-                return getContainer(source).readonly || getItem(element).readonly;
+                try {
+                    return getContainer(source).readonly || getItem(element).readonly;
+                } catch (error) { // It may happen that we actually hit a non-container
+                    return false;
+                }
             },
             accepts: (element: Element, target: Element): boolean => {
-                return !getContainer(target).readonly;
+                try {
+                    return !getContainer(target).readonly;
+                } catch (error) { // It may happen that we actually hit a non-container
+                    return false;
+                }
             },
             invalid: (element: Element): boolean => {
                 // This is not really documented in dragula or I could not find
@@ -100,7 +108,8 @@ export class State {
                     container.id, item.type, item.id, item.getPosition())
                 .then(item => {
                     (<Element>element.parentElement).replaceChild(item, element);
-                    this.init(element);
+                    this.initItem(item, container);
+                    this.init(item);
                 }) .catch(error => {
                     this.cancel(error, element);
                 });
@@ -132,8 +141,6 @@ export class State {
             return; // already initialized
         }
         if (!element.hasAttribute("data-container") || !element.hasAttribute("data-id")) {
-            console.log("not a container");
-            console.log(element);
             return; // not a container
         }
 
@@ -156,8 +163,6 @@ export class State {
             return; // already initialized
         }
         if (!element.hasAttribute("data-item-id")) {
-            console.log("not an item");
-            console.log(element);
             return; // not an item
         }
 
@@ -194,7 +199,7 @@ export class State {
                 continue; // not a layout
             }
 
-            const layout = getLayout(element);
+            const layout = getContainer(element);
 
             element.setAttribute("droppable", "1");
             this.drake.containers.push(layout.element);

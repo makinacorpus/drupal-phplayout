@@ -54,27 +54,15 @@ export enum ContainerType {
     Layout = "Layout"
 }
 
-export function getLayout(element: Element): Container {
-    if (element.hasAttribute("data-token") || !element.hasAttribute("data-layout-id") || !element.hasAttribute("data-id")) {
-        return new Container(
-            <string>element.getAttribute("data-id"),
-            <string>element.getAttribute("data-container"),
-            element,
-            <string>element.getAttribute("data-token"),
-            <string>element.getAttribute("data-id")
-        );
-    }
-    throw `element is not a container, or is not initialized properly`;
-}
-
 export function getContainer(element: Element): Container {
-    if (element.hasAttribute("data-token") || !element.hasAttribute("data-layout-id") || !element.hasAttribute("data-id")) {
+    if (element.hasAttribute("data-token") || element.hasAttribute("data-layout-id") || element.hasAttribute("data-id")) {
         return new Container(
             <string>element.getAttribute("data-id"),
             <string>element.getAttribute("data-container"),
             element,
             <string>element.getAttribute("data-token"),
-            <string>element.getAttribute("data-layout-id")
+            // If container has no data-layout-id, this means it is the layout
+            <string>(element.getAttribute("data-layout-id") || element.getAttribute("data-id"))
         );
     }
     throw `element is not a container, or is not initialized properly`;
