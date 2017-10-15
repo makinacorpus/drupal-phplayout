@@ -116,7 +116,6 @@ class FooEditRendererDecorator implements GridRendererInterface
         if ($this->isTemporary($container)) {
             $attributes['data-id'] = $container->getGridIdentifier();
             $attributes['data-container'] = 'hbox';
-            $attributes['data-readonly'] = '1';
             $addition = ''; //$this->renderMenu($container, $this->getHorizontalButtons($container));
         } else {
             $addition = '';

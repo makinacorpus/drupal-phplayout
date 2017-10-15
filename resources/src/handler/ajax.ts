@@ -3,6 +3,8 @@ import { LayoutHandler } from "../handler";
 
 enum AjaxRoute {
     Add = 'layout/ajax/add-item',
+    AddColumn = 'layout/ajax/add-column',
+    AddColumnContainer = 'layout/ajax/add-column-container',
     Move = 'layout/ajax/move',
     Remove = 'layout/ajax/remove'
 }
@@ -48,6 +50,22 @@ export class AjaxLayoutHandler implements LayoutHandler {
         });
     }
 
+    private createElementFromResponse(req: XMLHttpRequest): Element {
+        const data = JSON.parse(req.responseText);
+        if (!data || !data.success || !data.output) {
+            throw `${req.status}: ${req.statusText}: got invalid response data`;
+        }
+
+        const element = document.createElement('div');
+        element.innerHTML = data.output;
+
+        if (!(element.firstElementChild instanceof Element)) {
+            throw `${req.status}: ${req.statusText}: got invalid response html output`;
+        }
+
+        return element.firstElementChild;
+    }
+
     debug(message: any): void {
         console.log(`layout error: ${message}`);
     }
@@ -75,19 +93,7 @@ export class AjaxLayoutHandler implements LayoutHandler {
             destination: this.destination
         });
 
-        const data = JSON.parse(req.responseText);
-        if (!data || !data.success || !data.output) {
-            throw `${req.status}: ${req.statusText}: got invalid response data`;
-        }
-
-        const element = document.createElement('div');
-        element.innerHTML = data.output;
-
-        if (!(element.firstElementChild instanceof Element)) {
-            throw `${req.status}: ${req.statusText}: got invalid response html output`;
-        }
-
-        return element.firstElementChild;
+        return this.createElementFromResponse(req);
     }
 
     async removeItem(token: string, layout: string, itemId: string): Promise<void> {
@@ -97,5 +103,31 @@ export class AjaxLayoutHandler implements LayoutHandler {
             itemId: itemId,
             destination: this.destination
         });
+    }
+
+    async addColumnContainer(token: string, layout: string, containerId: string, position?: number, columnCount?: number, style?: string): Promise<Element> {
+        const req = await this.request(AjaxRoute.AddColumnContainer, {
+            token: token,
+            layout: layout,
+            containerId: containerId,
+            position: position,
+            columnCount: columnCount || 2,
+            style: style || "default",
+            destination: this.destination
+        });
+
+        return this.createElementFromResponse(req);
+    }
+
+    async addColumn(token: string, layout: string, containerId: string, position?: number): Promise<Element> {
+        const req = await this.request(AjaxRoute.AddColumn, {
+            token: token,
+            layout: layout,
+            containerId: containerId,
+            position: position || 0,
+            destination: this.destination
+        });
+
+        return this.createElementFromResponse(req);
     }
 }

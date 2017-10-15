@@ -1,6 +1,6 @@
 
 import { Drake } from "dragula";
-import { Container, getContainer, getItem } from "./item";
+import { Container, ContainerType, getContainer, getItem, getLayout } from "./item";
 import { createMenu } from "./ui/menu";
 import { LayoutHandler } from "./handler";
 
@@ -97,7 +97,7 @@ export class State {
 
             if (item.readonly) {
                 this.handler.addItem(container.token, container.layoutId,
-                    container.id, item.type, item.id, item.position)
+                    container.id, item.type, item.id, item.getPosition())
                 .then(item => {
                     (<Element>element.parentElement).replaceChild(item, element);
                     this.init(element);
@@ -106,7 +106,7 @@ export class State {
                 });
             } else {
                 this.handler.moveItem(container.token, container.layoutId,
-                    container.id, item.id, item.position)
+                    container.id, item.id, item.getPosition())
                 .catch(error => {
                     this.cancel(error, element)
                 });
@@ -121,60 +121,86 @@ export class State {
 
     // Collect new DOM information and initialize behaviours
     init(context: Element): void {
-        this.collectContainers(context);
+        this.collectLayouts(context);
         this.collectSources(context);
     }
 
-    // In given document context, find all source containers
+    // Same as init() but force a single container initialization
+    initContainer(element: Element, parent: Container) {
+
+        if (element.hasAttribute("droppable")) {
+            return; // already initialized
+        }
+        if (!element.hasAttribute("data-container") || !element.hasAttribute("data-id")) {
+            console.log("not a container");
+            console.log(element);
+            return; // not a container
+        }
+
+        element.setAttribute("data-token", parent.token);
+        element.setAttribute("data-layout-id", parent.layoutId);
+
+        const container = getContainer(element);
+        if (container.type !== ContainerType.Horizontal) {
+            element.setAttribute("droppable", "1");
+            this.drake.containers.push(container.element);
+        }
+        this.collectItems(container);
+
+        createMenu(this, container);
+    }
+
+    initItem(element: Element, parent: Container) {
+
+        if (element.hasAttribute("draggable")) {
+            return; // already initialized
+        }
+        if (!element.hasAttribute("data-item-id")) {
+            console.log("not an item");
+            console.log(element);
+            return; // not an item
+        }
+
+        const item = getItem(element);
+        element.setAttribute("draggable", "1");
+
+        if (!item.readonly) {
+            createMenu(this, item);
+        }
+    }
+
     private collectSources(context: Element) {
         for (let source of <Element[]><any>context.querySelectorAll("[data-layout-source]")) {
             this.drake.containers.push(source);
         }
     }
 
-    // Collect items in, should always be inside a container
-    private collectItems(context: Element) {
-        for (let itemElement of <Element[]><any>context.querySelectorAll("[data-item-type]:not([draggable])")) {
-            try {
-                const item = getItem(itemElement);
-                if (!item.readonly) {
-                    createMenu(this, item);
+    private collectItems(container: Container) {
+        for (let element of <Element[]><any>container.element.childNodes) {
+            if (element instanceof Element) {
+                if (element.hasAttribute("data-item-id")) {
+                    this.initItem(element, container);
+                } else {
+                    this.initContainer(element, container); // This is recursive
                 }
-                itemElement.setAttribute("draggable", "1");
-            } catch (error) {
-                console.log(error);
             }
         }
     }
 
-    // In given document context, find all containers and connect
-    // them to potential sources
-    private collectContainers(context: Element) {
-        for (let layout of <Element[]><any>context.querySelectorAll("[data-layout]")) {
-            if (!layout.hasAttribute("data-token") || !layout.hasAttribute("data-id")) {
-                continue;
+    private collectLayouts(context: Element) {
+        for (let element of <Element[]><any>context.querySelectorAll("[data-layout]")) {
+
+            if (!element.hasAttribute("data-token") || !element.hasAttribute("data-id")) {
+                continue; // not a layout
             }
 
-            let token = <string>layout.getAttribute("data-token");
-            let layoutId = <string>layout.getAttribute("data-id");
+            const layout = getLayout(element);
 
-            // [droppable] elements have already been initialized, drop them
-            for (let container of <Element[]><any>layout.querySelectorAll("[data-container]:not([droppable])")) {
-                if (!container.hasAttribute("data-id")) {
-                    continue;
-                }
-
-                container.setAttribute("data-token", token);
-                container.setAttribute("data-layout-id", layoutId);
-                createMenu(this, getContainer(container));
-
-                if (!container.hasAttribute("data-readonly")) {
-                    container.setAttribute("droppable", "1");
-                    this.drake.containers.push(container);
-                }
-            }
-
+            element.setAttribute("droppable", "1");
+            this.drake.containers.push(layout.element);
             this.collectItems(layout);
+
+            createMenu(this, layout);
         }
     }
 }

@@ -1,32 +1,5 @@
 
-.layout-container {
-  display: flex;
-  flex-flow: row;
-  margin: 0 -15px;
-}
-.layout-container > div {
-  position: relative;
-  flex: auto;
-  flex-basis: 0;
-  padding-left: 15px;
-  padding-right: 15px;
-}
-.layout-container .layout-column-4 {
-  flex: initial;
-  width: 25%;
-}
-.layout-container .layout-column-3 {
-  flex: initial;
-  width: 33%;
-}
-.layout-container .layout-column-2 {
-  flex: initial;
-  width: 50%;
-}
-.layout-container .layout-column-3-2 {
-  flex: initial;
-  width: 66%;
-}
+@import "./flex";
 
 /* Matches hovered containers */
 [data-container]:hover,
@@ -42,7 +15,7 @@
 }
 
 /* Disable all links within items, even thought we have JS for that */
-[data-item-id] a {
+[data-item-id] a, [data-item-id] .layout-menu a[role=drag] {
   pointer-events: none;
 }
 [data-item-id] .layout-menu a {
@@ -79,6 +52,15 @@
 [data-id].collapsed > *:not(.layout-menu) {
   display: none;
   visibility: hidden;
+}
+
+// position correctly the drag handler
+.layout-menu a[role=drag] {
+  z-index: 2;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
 }
 
 .layout-menu:hover > a {

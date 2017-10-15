@@ -26,6 +26,9 @@
   flex: initial;
   width: 66%;
 }
+.layout-container img {
+  max-width: 100%;
+}
 /* Matches hovered containers */
 [data-container]:hover,
 [data-container]:hover > [data-container] {
@@ -38,7 +41,8 @@
   min-height: 100px !important;
 }
 /* Disable all links within items, even thought we have JS for that */
-[data-item-id] a {
+[data-item-id] a,
+[data-item-id] .layout-menu a[role=drag] {
   pointer-events: none;
 }
 [data-item-id] .layout-menu a {
@@ -74,6 +78,13 @@
 [data-id].collapsed > *:not(.layout-menu) {
   display: none;
   visibility: hidden;
+}
+.layout-menu a[role=drag] {
+  z-index: 2;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
 }
 .layout-menu:hover > a {
   opacity: 1;

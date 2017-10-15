@@ -1,17 +1,23 @@
 
-import { Container, ContainerType, Item } from "../item";
+import { Container, ContainerType, Item, getContainerCount } from "../item";
 import { State } from "../state";
 
 const ICON_TEMPLATE = `<span class="fa fa-__GLYPH__" aria-hidden="true"></span> `;
+const DRAG_TEMPLATE =
+`<a role="drag" title="Maintain left mouse button to move">
+  <span class="fa fa-arrows" aria-hidden="true"></span>
+</a>`;
+
 const MENU_TEMPLATE =
 `<div class="layout-menu" data-menu="1">
-  <a role="button" href="#" title="__TITLE__">
+  <a role="button" href="#" title="Click to open, double-click to expand/hide content">
     <span class="fa fa-cog" aria-hidden="true"></span>
     <span class="title">__TITLE__</span>
   </a>
   <ul></ul>
 </div>`;
 
+// @todo unregister menus when elements/columns are dropped
 let globalMenuRegistry: Menu[] = [];
 let globalDocumentListenerSet = false;
 
@@ -113,10 +119,29 @@ function createItemLinks(state: State, item: Item): Element[] {
 function createHorizontalLinks(state: State, container: Container): Element[] {
     const links: Element[] = [];
 
-    // prepend column: chevron-left layout/ajax/add-column (containerId, 0)
-    // append column: chevron-right layout/ajax/add-column (containerId, length)
+    links.push(createLink(state, container, "Add column to left", "chevron-left", () => {
+        return state.handler.addColumn(container.token, container.layoutId, container.id, 0).then(element => {
+            container.element.insertBefore(element, container.element.firstChild);
+            state.init(element);
+            state.initContainer(element, container);
+        });
+    }));
+    links.push(createLink(state, container, "Add column to right", "chevron-right", () => {
+        const position = getContainerCount(container.element);
+        return state.handler.addColumn(container.token, container.layoutId, container.id, position).then(element => {
+            container.element.appendChild(element);
+            state.init(element);
+            state.initContainer(element, container);
+        });
+    }));
+
     links.push(createDivider());
-    // remove: remove layout/ajax/remove (itemId)
+
+    links.push(createLink(state, container, "Remove", "remove", () => {
+        return state.handler.removeItem(container.token, container.layoutId, container.id).then(() => {
+            state.remove(container.element);
+        });
+    }));
 
     return links;
 }
@@ -125,10 +150,30 @@ function createLayoutLinks(state: State, container: Container): Element[] {
     const links: Element[] = [];
 
     // options: wrench layout/callback/edit-item (itemId)
+
     links.push(createDivider());
+
     // prepend column container: th-large layout/ajax/add-column-container (containerId, position = 0, columnCount = 2)
+    links.push(createLink(state, container, "Add columns to top", "columns", () => {
+        return state.handler.addColumnContainer(container.token, container.layoutId, container.id, 0).then(element => {
+            container.element.insertBefore(element, container.element.firstChild);
+            state.init(element);
+            state.initContainer(element, container);
+        });
+    }));
+    links.push(createLink(state, container, "Add columns to bottom", "columns", () => {
+        const position = getContainerCount(container.element);
+        return state.handler.addColumn(container.token, container.layoutId, container.id, position).then(element => {
+            container.element.appendChild(element);
+            state.init(element);
+            state.initContainer(element, container);
+        });
+    }));
+
     // append column container: th-large layout/ajax/add-column-container (containerId, position = length, columnCount = 2)
+
     links.push(createDivider());
+
     // prepend item: picture layout/callback/add-item (containerId, position = 0)
     // append item: picture layout/callback/add-item (containerId, position = length)
     // set page content here: star
@@ -138,11 +183,24 @@ function createLayoutLinks(state: State, container: Container): Element[] {
 
 function createColumnLinks(state: State, container: Container): Element[] {
     const links = createLayoutLinks(state, container);
+    const parent = container.getParentContainer();
 
     links.push(createDivider());
 
-    // add column before: chevron-left layout/ajax/add-column (parentId, position)
-    // add column after: chevron-right layout/ajax/add-column (parentId, position + 1)
+    links.push(createLink(state, container, "Add column before", "chevron-left", () => {
+        return state.handler.addColumn(parent.token, parent.layoutId, parent.id, container.getPosition()).then(element => {
+            parent.element.insertBefore(element, container.element);
+            state.init(element);
+            state.initContainer(element, parent);
+        });
+    }));
+    links.push(createLink(state, container, "Add column after", "chevron-right", () => {
+        return state.handler.addColumn(parent.token, parent.layoutId, parent.id, container.getPosition() + 1).then(element => {
+            parent.element.insertBefore(element, container.element.nextSibling);
+            state.init(element);
+            state.initContainer(element, parent);
+        });
+    }));
 
     links.push(createDivider());
 
@@ -160,6 +218,7 @@ export function createMenu(state: State, item: Item): void {
 
     let links: Element[] = [];
     let title: string = "Error";
+    let addDragIcon = false;
 
     if (item instanceof Container) {
         if (item.type === ContainerType.Column) {
@@ -168,6 +227,7 @@ export function createMenu(state: State, item: Item): void {
         } else if (item.type === ContainerType.Horizontal) {
             title = "Columns container";
             links = createHorizontalLinks(state, item);
+            addDragIcon = true;
         } else {
             title = "Layout";
             links = createLayoutLinks(state, item);
@@ -175,6 +235,7 @@ export function createMenu(state: State, item: Item): void {
     } else {
         title = "Item";
         links = createItemLinks(state, item);
+        addDragIcon = true;
     }
 
     // Use a RegExp to handle multiple occurences (using a raw string
@@ -199,6 +260,13 @@ export function createMenu(state: State, item: Item): void {
     }
 
     globalMenuRegistry.push(new Menu(item, parentElement));
-
     item.element.insertBefore(parentElement, item.element.firstChild);
+
+// @todo we need this, else column containers cannot be moved up/down
+//    if (addDragIcon) {
+//        let dragElement: Element = document.createElement('div');
+//        dragElement.innerHTML = DRAG_TEMPLATE;
+//        dragElement = <Element>dragElement.firstElementChild;
+//        item.element.insertBefore(dragElement, item.element.firstChild);
+//    }
 }

@@ -111,34 +111,56 @@ function findItemPosition(element) {
 function findContainerPosition(element) {
     return findPosition(element, "data-id");
 }
+function getContainerCount(element) {
+    var count = 0;
+    for (var _i = 0, _a = element.childNodes; _i < _a.length; _i++) {
+        var child = _a[_i];
+        if (child instanceof Element) {
+            if (child.hasAttribute("data-id") || child.hasAttribute("data-item-type")) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+exports.getContainerCount = getContainerCount;
 var ContainerType;
 (function (ContainerType) {
     ContainerType["Column"] = "vbox";
     ContainerType["Horizontal"] = "hbox";
     ContainerType["Layout"] = "Layout";
 })(ContainerType = exports.ContainerType || (exports.ContainerType = {}));
+function getLayout(element) {
+    if (element.hasAttribute("data-token") || !element.hasAttribute("data-layout-id") || !element.hasAttribute("data-id")) {
+        return new Container(element.getAttribute("data-id"), element.getAttribute("data-container"), element, element.getAttribute("data-token"), element.getAttribute("data-id"));
+    }
+    throw "element is not a container, or is not initialized properly";
+}
+exports.getLayout = getLayout;
 function getContainer(element) {
     if (element.hasAttribute("data-token") || !element.hasAttribute("data-layout-id") || !element.hasAttribute("data-id")) {
-        return new Container(element.getAttribute("data-id"), element.getAttribute("data-container"), findContainerPosition(element), element.hasAttribute("data-readonly"), element, element.getAttribute("data-token"), element.getAttribute("data-layout-id"));
+        return new Container(element.getAttribute("data-id"), element.getAttribute("data-container"), element, element.getAttribute("data-token"), element.getAttribute("data-layout-id"));
     }
     throw "element is not a container, or is not initialized properly";
 }
 exports.getContainer = getContainer;
 function getItem(element) {
     if (element.hasAttribute("data-item-id")) {
-        return new Item((element.getAttribute("data-id") || element.getAttribute("data-item-id")), (element.getAttribute("data-item-type") || "null"), findItemPosition(element), !element.hasAttribute("data-id"), element);
+        return new Item((element.getAttribute("data-id") || element.getAttribute("data-item-id")), (element.getAttribute("data-item-type") || "null"), !element.hasAttribute("data-id"), element);
     }
     throw "element is not an item";
 }
 exports.getItem = getItem;
 var Item = (function () {
-    function Item(id, type, position, readonly, element) {
+    function Item(id, type, readonly, element) {
         this.id = id;
         this.type = type;
-        this.position = position;
         this.readonly = readonly;
         this.element = element;
     }
+    Item.prototype.getPosition = function () {
+        return findItemPosition(this.element);
+    };
     Item.prototype.toggleCollapse = function () {
         toggleClass(this.element, "collapsed");
     };
@@ -163,12 +185,15 @@ var Item = (function () {
 exports.Item = Item;
 var Container = (function (_super) {
     __extends(Container, _super);
-    function Container(id, type, position, readonly, element, token, layoutId) {
-        var _this = _super.call(this, id, type, position, readonly, element) || this;
+    function Container(id, type, element, token, layoutId) {
+        var _this = _super.call(this, id, type, type === ContainerType.Horizontal, element) || this;
         _this.layoutId = layoutId;
         _this.token = token;
         return _this;
     }
+    Container.prototype.getPosition = function () {
+        return findContainerPosition(this.element);
+    };
     return Container;
 }(Item));
 exports.Container = Container;
@@ -292,6 +317,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var AjaxRoute;
 (function (AjaxRoute) {
     AjaxRoute["Add"] = "layout/ajax/add-item";
+    AjaxRoute["AddColumn"] = "layout/ajax/add-column";
+    AjaxRoute["AddColumnContainer"] = "layout/ajax/add-column-container";
     AjaxRoute["Move"] = "layout/ajax/move";
     AjaxRoute["Remove"] = "layout/ajax/remove";
 })(AjaxRoute || (AjaxRoute = {}));
@@ -327,6 +354,18 @@ var AjaxLayoutHandler = (function () {
             req.send(_this.buildFormData(data));
         });
     };
+    AjaxLayoutHandler.prototype.createElementFromResponse = function (req) {
+        var data = JSON.parse(req.responseText);
+        if (!data || !data.success || !data.output) {
+            throw req.status + ": " + req.statusText + ": got invalid response data";
+        }
+        var element = document.createElement('div');
+        element.innerHTML = data.output;
+        if (!(element.firstElementChild instanceof Element)) {
+            throw req.status + ": " + req.statusText + ": got invalid response html output";
+        }
+        return element.firstElementChild;
+    };
     AjaxLayoutHandler.prototype.debug = function (message) {
         console.log("layout error: " + message);
     };
@@ -351,7 +390,7 @@ var AjaxLayoutHandler = (function () {
     };
     AjaxLayoutHandler.prototype.addItem = function (token, layout, containerId, itemType, itemId, position, style) {
         return __awaiter(this, void 0, void 0, function () {
-            var req, data, element;
+            var req;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4, this.request(AjaxRoute.Add, {
@@ -366,16 +405,7 @@ var AjaxLayoutHandler = (function () {
                         })];
                     case 1:
                         req = _a.sent();
-                        data = JSON.parse(req.responseText);
-                        if (!data || !data.success || !data.output) {
-                            throw req.status + ": " + req.statusText + ": got invalid response data";
-                        }
-                        element = document.createElement('div');
-                        element.innerHTML = data.output;
-                        if (!(element.firstElementChild instanceof Element)) {
-                            throw req.status + ": " + req.statusText + ": got invalid response html output";
-                        }
-                        return [2, element.firstElementChild];
+                        return [2, this.createElementFromResponse(req)];
                 }
             });
         });
@@ -393,6 +423,46 @@ var AjaxLayoutHandler = (function () {
                     case 1:
                         _a.sent();
                         return [2];
+                }
+            });
+        });
+    };
+    AjaxLayoutHandler.prototype.addColumnContainer = function (token, layout, containerId, position, columnCount, style) {
+        return __awaiter(this, void 0, void 0, function () {
+            var req;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.request(AjaxRoute.AddColumnContainer, {
+                            token: token,
+                            layout: layout,
+                            containerId: containerId,
+                            position: position,
+                            columnCount: columnCount || 2,
+                            style: style || "default",
+                            destination: this.destination
+                        })];
+                    case 1:
+                        req = _a.sent();
+                        return [2, this.createElementFromResponse(req)];
+                }
+            });
+        });
+    };
+    AjaxLayoutHandler.prototype.addColumn = function (token, layout, containerId, position) {
+        return __awaiter(this, void 0, void 0, function () {
+            var req;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.request(AjaxRoute.AddColumn, {
+                            token: token,
+                            layout: layout,
+                            containerId: containerId,
+                            position: position || 0,
+                            destination: this.destination
+                        })];
+                    case 1:
+                        req = _a.sent();
+                        return [2, this.createElementFromResponse(req)];
                 }
             });
         });
@@ -482,7 +552,7 @@ var State = (function () {
                 throw "container is readonly";
             }
             if (item.readonly) {
-                this.handler.addItem(container.token, container.layoutId, container.id, item.type, item.id, item.position)
+                this.handler.addItem(container.token, container.layoutId, container.id, item.type, item.id, item.getPosition())
                     .then(function (item) {
                     element.parentElement.replaceChild(item, element);
                     _this.init(element);
@@ -491,7 +561,7 @@ var State = (function () {
                 });
             }
             else {
-                this.handler.moveItem(container.token, container.layoutId, container.id, item.id, item.position)
+                this.handler.moveItem(container.token, container.layoutId, container.id, item.id, item.getPosition())
                     .catch(function (error) {
                     _this.cancel(error, element);
                 });
@@ -502,8 +572,42 @@ var State = (function () {
         }
     };
     State.prototype.init = function (context) {
-        this.collectContainers(context);
+        this.collectLayouts(context);
         this.collectSources(context);
+    };
+    State.prototype.initContainer = function (element, parent) {
+        if (element.hasAttribute("droppable")) {
+            return;
+        }
+        if (!element.hasAttribute("data-container") || !element.hasAttribute("data-id")) {
+            console.log("not a container");
+            console.log(element);
+            return;
+        }
+        element.setAttribute("data-token", parent.token);
+        element.setAttribute("data-layout-id", parent.layoutId);
+        var container = item_1.getContainer(element);
+        if (container.type !== item_1.ContainerType.Horizontal) {
+            element.setAttribute("droppable", "1");
+            this.drake.containers.push(container.element);
+        }
+        this.collectItems(container);
+        menu_1.createMenu(this, container);
+    };
+    State.prototype.initItem = function (element, parent) {
+        if (element.hasAttribute("draggable")) {
+            return;
+        }
+        if (!element.hasAttribute("data-item-id")) {
+            console.log("not an item");
+            console.log(element);
+            return;
+        }
+        var item = item_1.getItem(element);
+        element.setAttribute("draggable", "1");
+        if (!item.readonly) {
+            menu_1.createMenu(this, item);
+        }
     };
     State.prototype.collectSources = function (context) {
         for (var _i = 0, _a = context.querySelectorAll("[data-layout-source]"); _i < _a.length; _i++) {
@@ -511,43 +615,30 @@ var State = (function () {
             this.drake.containers.push(source);
         }
     };
-    State.prototype.collectItems = function (context) {
-        for (var _i = 0, _a = context.querySelectorAll("[data-item-type]:not([draggable])"); _i < _a.length; _i++) {
-            var itemElement = _a[_i];
-            try {
-                var item = item_1.getItem(itemElement);
-                if (!item.readonly) {
-                    menu_1.createMenu(this, item);
+    State.prototype.collectItems = function (container) {
+        for (var _i = 0, _a = container.element.childNodes; _i < _a.length; _i++) {
+            var element = _a[_i];
+            if (element instanceof Element) {
+                if (element.hasAttribute("data-item-id")) {
+                    this.initItem(element, container);
                 }
-                itemElement.setAttribute("draggable", "1");
-            }
-            catch (error) {
-                console.log(error);
+                else {
+                    this.initContainer(element, container);
+                }
             }
         }
     };
-    State.prototype.collectContainers = function (context) {
+    State.prototype.collectLayouts = function (context) {
         for (var _i = 0, _a = context.querySelectorAll("[data-layout]"); _i < _a.length; _i++) {
-            var layout = _a[_i];
-            if (!layout.hasAttribute("data-token") || !layout.hasAttribute("data-id")) {
+            var element = _a[_i];
+            if (!element.hasAttribute("data-token") || !element.hasAttribute("data-id")) {
                 continue;
             }
-            var token = layout.getAttribute("data-token");
-            var layoutId = layout.getAttribute("data-id");
-            for (var _b = 0, _c = layout.querySelectorAll("[data-container]:not([droppable])"); _b < _c.length; _b++) {
-                var container = _c[_b];
-                if (!container.hasAttribute("data-id")) {
-                    continue;
-                }
-                container.setAttribute("data-token", token);
-                container.setAttribute("data-layout-id", layoutId);
-                menu_1.createMenu(this, item_1.getContainer(container));
-                if (!container.hasAttribute("data-readonly")) {
-                    container.setAttribute("droppable", "1");
-                    this.drake.containers.push(container);
-                }
-            }
+            var layout = item_1.getLayout(element);
+            element.setAttribute("droppable", "1");
+            this.drake.containers.push(layout.element);
             this.collectItems(layout);
+            menu_1.createMenu(this, layout);
         }
     };
     return State;
@@ -564,7 +655,8 @@ exports.State = State;
 Object.defineProperty(exports, "__esModule", { value: true });
 var item_1 = __webpack_require__(0);
 var ICON_TEMPLATE = "<span class=\"fa fa-__GLYPH__\" aria-hidden=\"true\"></span> ";
-var MENU_TEMPLATE = "<div class=\"layout-menu\" data-menu=\"1\">\n  <a role=\"button\" href=\"#\" title=\"__TITLE__\">\n    <span class=\"fa fa-cog\" aria-hidden=\"true\"></span>\n    <span class=\"title\">__TITLE__</span>\n  </a>\n  <ul></ul>\n</div>";
+var DRAG_TEMPLATE = "<a role=\"drag\" title=\"Maintain left mouse button to move\">\n  <span class=\"fa fa-arrows\" aria-hidden=\"true\"></span>\n</a>";
+var MENU_TEMPLATE = "<div class=\"layout-menu\" data-menu=\"1\">\n  <a role=\"button\" href=\"#\" title=\"Click to open, double-click to expand/hide content\">\n    <span class=\"fa fa-cog\" aria-hidden=\"true\"></span>\n    <span class=\"title\">__TITLE__</span>\n  </a>\n  <ul></ul>\n</div>";
 var globalMenuRegistry = [];
 var globalDocumentListenerSet = false;
 function globalDocumentCloseMenuListener(event) {
@@ -644,18 +736,68 @@ function createItemLinks(state, item) {
 }
 function createHorizontalLinks(state, container) {
     var links = [];
+    links.push(createLink(state, container, "Add column to left", "chevron-left", function () {
+        return state.handler.addColumn(container.token, container.layoutId, container.id, 0).then(function (element) {
+            container.element.insertBefore(element, container.element.firstChild);
+            state.init(element);
+            state.initContainer(element, container);
+        });
+    }));
+    links.push(createLink(state, container, "Add column to right", "chevron-right", function () {
+        var position = item_1.getContainerCount(container.element);
+        return state.handler.addColumn(container.token, container.layoutId, container.id, position).then(function (element) {
+            container.element.appendChild(element);
+            state.init(element);
+            state.initContainer(element, container);
+        });
+    }));
     links.push(createDivider());
+    links.push(createLink(state, container, "Remove", "remove", function () {
+        return state.handler.removeItem(container.token, container.layoutId, container.id).then(function () {
+            state.remove(container.element);
+        });
+    }));
     return links;
 }
 function createLayoutLinks(state, container) {
     var links = [];
     links.push(createDivider());
+    links.push(createLink(state, container, "Add columns to top", "columns", function () {
+        return state.handler.addColumnContainer(container.token, container.layoutId, container.id, 0).then(function (element) {
+            container.element.insertBefore(element, container.element.firstChild);
+            state.init(element);
+            state.initContainer(element, container);
+        });
+    }));
+    links.push(createLink(state, container, "Add columns to bottom", "columns", function () {
+        var position = item_1.getContainerCount(container.element);
+        return state.handler.addColumn(container.token, container.layoutId, container.id, position).then(function (element) {
+            container.element.appendChild(element);
+            state.init(element);
+            state.initContainer(element, container);
+        });
+    }));
     links.push(createDivider());
     return links;
 }
 function createColumnLinks(state, container) {
     var links = createLayoutLinks(state, container);
+    var parent = container.getParentContainer();
     links.push(createDivider());
+    links.push(createLink(state, container, "Add column before", "chevron-left", function () {
+        return state.handler.addColumn(parent.token, parent.layoutId, parent.id, container.getPosition()).then(function (element) {
+            parent.element.insertBefore(element, container.element);
+            state.init(element);
+            state.initContainer(element, parent);
+        });
+    }));
+    links.push(createLink(state, container, "Add column after", "chevron-right", function () {
+        return state.handler.addColumn(parent.token, parent.layoutId, parent.id, container.getPosition() + 1).then(function (element) {
+            parent.element.insertBefore(element, container.element.nextSibling);
+            state.init(element);
+            state.initContainer(element, parent);
+        });
+    }));
     links.push(createDivider());
     links.push(createLink(state, container, "Remove this column", "remove", function () {
         return state.handler.removeItem(container.token, container.layoutId, container.id).then(function () {
@@ -667,6 +809,7 @@ function createColumnLinks(state, container) {
 function createMenu(state, item) {
     var links = [];
     var title = "Error";
+    var addDragIcon = false;
     if (item instanceof item_1.Container) {
         if (item.type === item_1.ContainerType.Column) {
             title = "Column";
@@ -675,6 +818,7 @@ function createMenu(state, item) {
         else if (item.type === item_1.ContainerType.Horizontal) {
             title = "Columns container";
             links = createHorizontalLinks(state, item);
+            addDragIcon = true;
         }
         else {
             title = "Layout";
@@ -684,6 +828,7 @@ function createMenu(state, item) {
     else {
         title = "Item";
         links = createItemLinks(state, item);
+        addDragIcon = true;
     }
     var output = MENU_TEMPLATE.replace(new RegExp('__TITLE__', 'g'), title).replace("__LINKS__", "<li><a>coucou</a></href>");
     var element = document.createElement('div');

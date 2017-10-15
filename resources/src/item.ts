@@ -36,10 +36,35 @@ function findContainerPosition(element: Element): number {
     return findPosition(element, "data-id");
 }
 
+export function getContainerCount(element: Element): number {
+    let count = 0;
+    for (let child of <Node[]><any>element.childNodes) {
+        if (child instanceof Element) {
+            if (child.hasAttribute("data-id") || child.hasAttribute("data-item-type")) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
 export enum ContainerType {
     Column = "vbox",
     Horizontal = "hbox",
     Layout = "Layout"
+}
+
+export function getLayout(element: Element): Container {
+    if (element.hasAttribute("data-token") || !element.hasAttribute("data-layout-id") || !element.hasAttribute("data-id")) {
+        return new Container(
+            <string>element.getAttribute("data-id"),
+            <string>element.getAttribute("data-container"),
+            element,
+            <string>element.getAttribute("data-token"),
+            <string>element.getAttribute("data-id")
+        );
+    }
+    throw `element is not a container, or is not initialized properly`;
 }
 
 export function getContainer(element: Element): Container {
@@ -47,8 +72,6 @@ export function getContainer(element: Element): Container {
         return new Container(
             <string>element.getAttribute("data-id"),
             <string>element.getAttribute("data-container"),
-            findContainerPosition(element),
-            element.hasAttribute("data-readonly"),
             element,
             <string>element.getAttribute("data-token"),
             <string>element.getAttribute("data-layout-id")
@@ -62,7 +85,6 @@ export function getItem(element: Element): Item {
         return new Item(
             <string>(element.getAttribute("data-id") || element.getAttribute("data-item-id")),
             <string>(element.getAttribute("data-item-type") || "null"),
-            findItemPosition(element),
             !element.hasAttribute("data-id"),
             element
         );
@@ -77,16 +99,19 @@ export class Item {
     readonly id: string;
     readonly type: string;
     readonly element: Element;
-    readonly position: number;
     readonly readonly: boolean;
 
-    constructor(id: string, type: string, position: number, readonly: boolean, element: Element)
+    constructor(id: string, type: string, readonly: boolean, element: Element)
     {
         this.id = id;
         this.type = type;
-        this.position = position;
         this.readonly = readonly;
         this.element = element;
+    }
+
+    getPosition() {
+        // position cannot be cached, because item can be moved
+        return findItemPosition(this.element);
     }
 
     toggleCollapse() {
@@ -117,12 +142,17 @@ export class Container extends Item {
     readonly layoutId: string;
     readonly token: string;
 
-    constructor(id: string, type: string, position: number, readonly: boolean, element: Element,
+    constructor(id: string, type: string, element: Element,
         token: string, layoutId: string)
     {
-        super(id, type, position, readonly, element);
+        super(id, type, type === ContainerType.Horizontal, element);
 
         this.layoutId = layoutId;
         this.token = token;
+    }
+
+    getPosition() {
+        // position cannot be cached, because item can be moved
+        return findContainerPosition(this.element);
     }
 }
