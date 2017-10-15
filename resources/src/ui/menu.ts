@@ -2,6 +2,8 @@
 import { Container, ContainerType, Item, getContainerCount } from "../item";
 import { State } from "../state";
 
+// @todo move left, move right, move up, move down, in menus
+
 const ICON_TEMPLATE = `<span class="fa fa-__GLYPH__" aria-hidden="true"></span> `;
 const DRAG_TEMPLATE =
 `<a role="drag" title="Maintain left mouse button to move">

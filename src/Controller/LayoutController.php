@@ -3,7 +3,6 @@
 namespace MakinaCorpus\Drupal\Layout\Controller;
 
 use Drupal\Core\Form\FormBuilderInterface;
-use MakinaCorpus\Drupal\Layout\Form\LayoutAddItemForm;
 use MakinaCorpus\Drupal\Layout\Form\LayoutItemOptionsForm;
 use MakinaCorpus\Drupal\Sf\DrupalResponse;
 use MakinaCorpus\Layout\Context\Context;
@@ -76,17 +75,6 @@ class LayoutController extends EditController
     }
 
     /**
-     * Add item form action
-     */
-    public function addItemFormAction(Request $request, Context $context, LayoutInterface $layout, int $containerId, int $position = 0) : Response
-    {
-        $response = new DrupalResponse();
-        $response->setContent($this->drupalFormBuilder->getForm(LayoutAddItemForm::class, $context, $layout, $containerId, $position));
-
-        return $response;
-    }
-
-    /**
      * Edit item form action
      */
     public function editItemFormAction(Request $request, Context $context, EditToken $token, LayoutInterface $layout, int $itemId = 0)
@@ -103,35 +91,5 @@ class LayoutController extends EditController
     public function setPageAction(Request $request, Context $context, EditToken $token, LayoutInterface $layout, int $containerId, int $position = 0) : Response
     {
         return $this->addAction($request, $context, $token, $layout, $containerId, 'page', 1, $position);
-    }
-
-    /**
-     * Node autocomplete callback
-     */
-    public function nodeAutocompleteAction(string $string) : Response
-    {
-        $ret = [];
-
-        $escapedString = $this->database->escapeLike($string) . '%';
-
-        $results = $this
-            ->database
-            ->select('node', 'n')
-            ->fields('n', ['nid', 'title', 'type'])
-            ->condition('n.title', $escapedString, 'LIKE')
-            ->addTag('node_access')
-            ->execute()
-            ->fetchAll()
-        ;
-
-        foreach ($results as $data) {
-
-            $type = node_type_get_name($data->type);
-            $key  = check_plain($type) . ' - ' . check_plain($data->title) . ' (' . $data->nid . ')';
-
-            $ret[$key] = $key;
-        }
-
-        return new JsonResponse($ret);
     }
 }
