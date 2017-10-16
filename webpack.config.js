@@ -2,6 +2,7 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 const ExtractTextPlugin = require("extract-text-webpack-plugin");
 const path = require('path');
 const webpack = require('webpack');
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 const distDirectory = path.resolve(__dirname, 'public');
 const extractLess = new ExtractTextPlugin({
@@ -11,15 +12,13 @@ const extractLess = new ExtractTextPlugin({
 module.exports = {
   entry: './resources/index.js',
 
-  devtool: 'source-map',
+  //devtool: 'source-map',
 
   plugins: [
     new CleanWebpackPlugin([
       distDirectory
     ]),
-//    new webpack.optimize.UglifyJsPlugin({
-//      sourceMap: 0
-//    }),
+    new UglifyJSPlugin(),
     new webpack.LoaderOptionsPlugin({
       options: {
         jshint: {
