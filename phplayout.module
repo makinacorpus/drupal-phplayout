@@ -32,13 +32,25 @@ function phplayout_menu() {
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::add'],
   ];
-  $items['layout/ajax/remove'] = [
+  $items['layout/ajax/get-styles'] = [
     'page callback' => 'sf_dic_page',
-    'page arguments' => ['php_layout.drupal_layout_controller::remove'],
+    'page arguments' => ['php_layout.drupal_layout_controller::getAllowedStyles'],
   ];
   $items['layout/ajax/move'] = [
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::move'],
+  ];
+  $items['layout/ajax/remove'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.drupal_layout_controller::remove'],
+  ];
+  $items['layout/ajax/render'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.drupal_layout_controller::render'],
+  ];
+  $items['layout/ajax/set-style'] = [
+    'page callback' => 'sf_dic_page',
+    'page arguments' => ['php_layout.drupal_layout_controller::setStyle'],
   ];
 
   // Token control actions
@@ -64,10 +76,6 @@ function phplayout_menu() {
   ];
 
   // More specific callbacks
-  $items['layout/callback/edit-item'] = [
-    'page callback' => 'sf_dic_page',
-    'page arguments' => ['php_layout.drupal_layout_controller::editItemForm'],
-  ];
   $items['layout/callback/set-page'] = [
     'page callback' => 'sf_dic_page',
     'page arguments' => ['php_layout.drupal_layout_controller::setPage'],

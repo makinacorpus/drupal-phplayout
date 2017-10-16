@@ -5,8 +5,11 @@ enum AjaxRoute {
     Add = 'layout/ajax/add-item',
     AddColumn = 'layout/ajax/add-column',
     AddColumnContainer = 'layout/ajax/add-column-container',
+    GetAllowedStyles = 'layout/ajax/get-styles',
     Move = 'layout/ajax/move',
-    Remove = 'layout/ajax/remove'
+    Remove = 'layout/ajax/remove',
+    Render = 'layout/ajax/render',
+    SetStyle = 'layout/ajax/set-style',
 }
 
 // AJAX store, suitable for all web apps as long as they implement the generic
@@ -70,15 +73,30 @@ export class AjaxLayoutHandler implements LayoutHandler {
         console.log(`layout error: ${message}`);
     }
 
-    async moveItem(token: string, layout: string, containerId: string, itemId: string, newPosition: number): Promise<void> {
-        await this.request(AjaxRoute.Move, {
+    async addColumn(token: string, layout: string, containerId: string, position?: number): Promise<Element> {
+        const req = await this.request(AjaxRoute.AddColumn, {
             token: token,
             layout: layout,
             containerId: containerId,
-            itemId: itemId,
-            newPosition: newPosition,
+            position: position || 0,
             destination: this.destination
         });
+
+        return this.createElementFromResponse(req);
+    }
+
+    async addColumnContainer(token: string, layout: string, containerId: string, position?: number, columnCount?: number, style?: string): Promise<Element> {
+        const req = await this.request(AjaxRoute.AddColumnContainer, {
+            token: token,
+            layout: layout,
+            containerId: containerId,
+            position: position,
+            columnCount: columnCount || 2,
+            style: style || "default",
+            destination: this.destination
+        });
+
+        return this.createElementFromResponse(req);
     }
 
     async addItem(token: string, layout: string, containerId: string, itemType: string, itemId: string, position: number, style?: string): Promise<Element> {
@@ -96,6 +114,33 @@ export class AjaxLayoutHandler implements LayoutHandler {
         return this.createElementFromResponse(req);
     }
 
+    async getAllowedStyles(token: string, layout: string, itemId: string): Promise<any> {
+        const req = await this.request(AjaxRoute.AddColumnContainer, {
+            token: token,
+            layout: layout,
+            itemId: itemId,
+            destination: this.destination
+        });
+
+        const data = JSON.parse(req.responseText);
+        if (!data || !data.success || !data.styles) {
+            throw `${req.status}: ${req.statusText}: got invalid response data`;
+        }
+
+        return data.styles;
+    }
+
+    async moveItem(token: string, layout: string, containerId: string, itemId: string, newPosition: number): Promise<void> {
+        await this.request(AjaxRoute.Move, {
+            token: token,
+            layout: layout,
+            containerId: containerId,
+            itemId: itemId,
+            newPosition: newPosition,
+            destination: this.destination
+        });
+    }
+
     async removeItem(token: string, layout: string, itemId: string): Promise<void> {
         await this.request(AjaxRoute.Remove, {
             token: token,
@@ -105,26 +150,23 @@ export class AjaxLayoutHandler implements LayoutHandler {
         });
     }
 
-    async addColumnContainer(token: string, layout: string, containerId: string, position?: number, columnCount?: number, style?: string): Promise<Element> {
-        const req = await this.request(AjaxRoute.AddColumnContainer, {
+    async renderItem(token: string, layout: string, itemId: string): Promise<Element> {
+        const req = await this.request(AjaxRoute.Render, {
             token: token,
             layout: layout,
-            containerId: containerId,
-            position: position,
-            columnCount: columnCount || 2,
-            style: style || "default",
+            itemId: itemId,
             destination: this.destination
         });
 
         return this.createElementFromResponse(req);
     }
 
-    async addColumn(token: string, layout: string, containerId: string, position?: number): Promise<Element> {
-        const req = await this.request(AjaxRoute.AddColumn, {
+    async setStyle(token: string, layout: string, itemId: string, style: string): Promise<Element> {
+        const req = await this.request(AjaxRoute.SetStyle, {
             token: token,
             layout: layout,
-            containerId: containerId,
-            position: position || 0,
+            itemId: itemId,
+            style: style,
             destination: this.destination
         });
 

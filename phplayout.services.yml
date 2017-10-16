@@ -21,7 +21,7 @@ services:
     php_layout.drupal_layout_controller:
         public: true
         class: MakinaCorpus\Drupal\Layout\Controller\LayoutController
-        arguments: ['@form_builder', '@database', '@php_layout.grid_renderer_decorator', '@php_layout.renderer', '@php_layout.type_registry']
+        arguments: ['@php_layout.grid_renderer_decorator', '@php_layout.renderer', '@php_layout.type_registry']
 
     #
     # Item types

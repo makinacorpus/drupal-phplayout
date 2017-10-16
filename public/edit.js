@@ -312,8 +312,11 @@ var AjaxRoute;
     AjaxRoute["Add"] = "layout/ajax/add-item";
     AjaxRoute["AddColumn"] = "layout/ajax/add-column";
     AjaxRoute["AddColumnContainer"] = "layout/ajax/add-column-container";
+    AjaxRoute["GetAllowedStyles"] = "layout/ajax/get-styles";
     AjaxRoute["Move"] = "layout/ajax/move";
     AjaxRoute["Remove"] = "layout/ajax/remove";
+    AjaxRoute["Render"] = "layout/ajax/render";
+    AjaxRoute["SetStyle"] = "layout/ajax/set-style";
 })(AjaxRoute || (AjaxRoute = {}));
 var AjaxLayoutHandler = (function () {
     function AjaxLayoutHandler(baseUrl, destination) {
@@ -362,21 +365,42 @@ var AjaxLayoutHandler = (function () {
     AjaxLayoutHandler.prototype.debug = function (message) {
         console.log("layout error: " + message);
     };
-    AjaxLayoutHandler.prototype.moveItem = function (token, layout, containerId, itemId, newPosition) {
+    AjaxLayoutHandler.prototype.addColumn = function (token, layout, containerId, position) {
         return __awaiter(this, void 0, void 0, function () {
+            var req;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.request(AjaxRoute.Move, {
+                    case 0: return [4, this.request(AjaxRoute.AddColumn, {
                             token: token,
                             layout: layout,
                             containerId: containerId,
-                            itemId: itemId,
-                            newPosition: newPosition,
+                            position: position || 0,
                             destination: this.destination
                         })];
                     case 1:
-                        _a.sent();
-                        return [2];
+                        req = _a.sent();
+                        return [2, this.createElementFromResponse(req)];
+                }
+            });
+        });
+    };
+    AjaxLayoutHandler.prototype.addColumnContainer = function (token, layout, containerId, position, columnCount, style) {
+        return __awaiter(this, void 0, void 0, function () {
+            var req;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.request(AjaxRoute.AddColumnContainer, {
+                            token: token,
+                            layout: layout,
+                            containerId: containerId,
+                            position: position,
+                            columnCount: columnCount || 2,
+                            style: style || "default",
+                            destination: this.destination
+                        })];
+                    case 1:
+                        req = _a.sent();
+                        return [2, this.createElementFromResponse(req)];
                 }
             });
         });
@@ -403,6 +427,47 @@ var AjaxLayoutHandler = (function () {
             });
         });
     };
+    AjaxLayoutHandler.prototype.getAllowedStyles = function (token, layout, itemId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var req, data;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.request(AjaxRoute.AddColumnContainer, {
+                            token: token,
+                            layout: layout,
+                            itemId: itemId,
+                            destination: this.destination
+                        })];
+                    case 1:
+                        req = _a.sent();
+                        data = JSON.parse(req.responseText);
+                        if (!data || !data.success || !data.styles) {
+                            throw req.status + ": " + req.statusText + ": got invalid response data";
+                        }
+                        return [2, data.styles];
+                }
+            });
+        });
+    };
+    AjaxLayoutHandler.prototype.moveItem = function (token, layout, containerId, itemId, newPosition) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.request(AjaxRoute.Move, {
+                            token: token,
+                            layout: layout,
+                            containerId: containerId,
+                            itemId: itemId,
+                            newPosition: newPosition,
+                            destination: this.destination
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2];
+                }
+            });
+        });
+    };
     AjaxLayoutHandler.prototype.removeItem = function (token, layout, itemId) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -420,18 +485,15 @@ var AjaxLayoutHandler = (function () {
             });
         });
     };
-    AjaxLayoutHandler.prototype.addColumnContainer = function (token, layout, containerId, position, columnCount, style) {
+    AjaxLayoutHandler.prototype.renderItem = function (token, layout, itemId) {
         return __awaiter(this, void 0, void 0, function () {
             var req;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.request(AjaxRoute.AddColumnContainer, {
+                    case 0: return [4, this.request(AjaxRoute.Render, {
                             token: token,
                             layout: layout,
-                            containerId: containerId,
-                            position: position,
-                            columnCount: columnCount || 2,
-                            style: style || "default",
+                            itemId: itemId,
                             destination: this.destination
                         })];
                     case 1:
@@ -441,16 +503,16 @@ var AjaxLayoutHandler = (function () {
             });
         });
     };
-    AjaxLayoutHandler.prototype.addColumn = function (token, layout, containerId, position) {
+    AjaxLayoutHandler.prototype.setStyle = function (token, layout, itemId, style) {
         return __awaiter(this, void 0, void 0, function () {
             var req;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.request(AjaxRoute.AddColumn, {
+                    case 0: return [4, this.request(AjaxRoute.SetStyle, {
                             token: token,
                             layout: layout,
-                            containerId: containerId,
-                            position: position || 0,
+                            itemId: itemId,
+                            style: style,
                             destination: this.destination
                         })];
                     case 1:

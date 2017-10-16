@@ -5,7 +5,6 @@ namespace MakinaCorpus\Drupal\Layout\DependencyInjection\Compiler;
 use MakinaCorpus\Layout\Type\ItemTypeInterface;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
 /**
