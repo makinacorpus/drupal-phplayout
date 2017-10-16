@@ -54,13 +54,18 @@ class DefaultPageInjector
                 $region = 'content';
             }
 
-            if ($token && $token->contains($layout->getId())) {
+            $isEditable = $token && $token->contains($layout->getId());
+            if ($isEditable) {
                 $this->editGridRenderer->setCurrentToken($token);
             } else {
                 $this->editGridRenderer->dropToken();
             }
 
-            $page[$region]['layout'][$layout->getId()] = ['#markup' => $this->renderer->render($layout->getTopLevelContainer(), $this->context)];
+            $topLevel = $layout->getTopLevelContainer();
+
+            if ($isEditable || !$topLevel->isEmpty()) {
+                $page[$region]['layout'][$layout->getId()] = ['#markup' => $this->renderer->render($topLevel, $this->context)];
+            }
         }
 
         if (true) { // @todo access at least one layout
