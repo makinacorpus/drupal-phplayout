@@ -250,7 +250,7 @@ var DrupalState = (function (_super) {
 Drupal.behaviors.Layout = {
     attach: function (context, settings) {
         if (!state) {
-            state = new DrupalState(new ajax_1.AjaxLayoutHandler(settings.layout.baseurl, settings.layout.destination));
+            state = new DrupalState(new ajax_1.AjaxLayoutHandler(settings.basePath, settings.layout.destination));
         }
         state.initNoBehaviors(context);
     }

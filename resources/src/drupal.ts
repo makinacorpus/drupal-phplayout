@@ -24,7 +24,7 @@ class DrupalState extends State {
 Drupal.behaviors.Layout = {
     attach: (context: Element, settings: any) => {
         if (!state) {
-            state = new DrupalState(new AjaxLayoutHandler(settings.layout.baseurl, settings.layout.destination));
+            state = new DrupalState(new AjaxLayoutHandler(settings.basePath, settings.layout.destination));
         }
         // Initial init call must not call Drupal.attachBehaviors
         // else we would have an inifinite loop, that would be pretty

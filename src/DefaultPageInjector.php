@@ -48,6 +48,8 @@ class DefaultPageInjector
             $token = $this->context->getToken();
         }
 
+        $pageContainsEditableLayouts = false;
+
         // Working multiple pass version
         foreach ($this->context->getPageLayouts() as $layout) {
             if (!$layout instanceof Layout || !($region = $layout->getRegion())) {
@@ -57,6 +59,7 @@ class DefaultPageInjector
             $isEditable = $token && $token->contains($layout->getId());
             if ($isEditable) {
                 $this->editGridRenderer->setCurrentToken($token);
+                $pageContainsEditableLayouts = true;
             } else {
                 $this->editGridRenderer->dropToken();
             }
@@ -68,18 +71,9 @@ class DefaultPageInjector
             }
         }
 
-        if (true) { // @todo access at least one layout
-
-            if ($token) {
-                drupal_add_library('phplayout', 'edit_basic');
-                drupal_add_js([
-                    'layout' => [
-                        'token'   => $token->getToken(),
-                        'baseurl' => base_path(),
-                        'destination' => drupal_get_destination()['destination'],
-                    ]
-                ], 'setting');
-            }
+        if ($token && $pageContainsEditableLayouts) {
+            drupal_add_library('phplayout', 'edit_basic');
+            drupal_add_js(['layout' => ['destination' => drupal_get_destination()['destination']]], 'setting');
         }
     }
 }
