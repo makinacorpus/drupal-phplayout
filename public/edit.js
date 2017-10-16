@@ -173,6 +173,7 @@ var Item = (function () {
     Item.prototype.findParentId = function () {
         return this.findParentElement().getAttribute("data-id") || "";
     };
+    Item.DefaultStyle = "_default";
     return Item;
 }());
 exports.Item = Item;
@@ -307,6 +308,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var item_1 = __webpack_require__(0);
 var AjaxRoute;
 (function (AjaxRoute) {
     AjaxRoute["Add"] = "layout/ajax/add-item";
@@ -395,7 +397,7 @@ var AjaxLayoutHandler = (function () {
                             containerId: containerId,
                             position: position,
                             columnCount: columnCount || 2,
-                            style: style || "default",
+                            style: style || item_1.Item.DefaultStyle,
                             destination: this.destination
                         })];
                     case 1:
@@ -417,7 +419,7 @@ var AjaxLayoutHandler = (function () {
                             itemType: itemType,
                             itemId: itemId,
                             position: position,
-                            style: "default",
+                            style: style || item_1.Item.DefaultStyle,
                             destination: this.destination
                         })];
                     case 1:
@@ -432,7 +434,7 @@ var AjaxLayoutHandler = (function () {
             var req, data;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.request(AjaxRoute.AddColumnContainer, {
+                    case 0: return [4, this.request(AjaxRoute.GetAllowedStyles, {
                             token: token,
                             layout: layout,
                             itemId: itemId,
@@ -512,7 +514,7 @@ var AjaxLayoutHandler = (function () {
                             token: token,
                             layout: layout,
                             itemId: itemId,
-                            style: style,
+                            style: style || null,
                             destination: this.destination
                         })];
                     case 1:
@@ -716,6 +718,7 @@ exports.State = State;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var item_1 = __webpack_require__(0);
+var dialog_1 = __webpack_require__(8);
 var ICON_TEMPLATE = "<span class=\"fa fa-__GLYPH__\" aria-hidden=\"true\"></span> ";
 var DRAG_TEMPLATE = "<a role=\"drag\" title=\"Maintain left mouse button to move\">\n  <span class=\"fa fa-arrows\" aria-hidden=\"true\"></span>\n</a>";
 var MENU_TEMPLATE = "<div class=\"layout-menu\" data-menu=\"1\">\n  <a role=\"button\" href=\"#\" title=\"Click to open, double-click to expand/hide content\">\n    <span class=\"fa fa-cog\" aria-hidden=\"true\"></span>\n    <span class=\"title\">__TITLE__</span>\n  </a>\n  <ul></ul>\n</div>";
@@ -728,6 +731,14 @@ function globalDocumentCloseMenuListener(event) {
             if (!(event.target instanceof Node) || !menu.element.contains(event.target)) {
                 menu.close();
             }
+        }
+    }
+}
+function globalDocumentCloseAllMenu() {
+    if (globalMenuRegistry.length) {
+        for (var _i = 0, globalMenuRegistry_2 = globalMenuRegistry; _i < globalMenuRegistry_2.length; _i++) {
+            var menu = globalMenuRegistry_2[_i];
+            menu.close();
         }
     }
 }
@@ -760,7 +771,7 @@ var Menu = (function () {
     };
     return Menu;
 }());
-function createLink(state, item, text, icon, callback) {
+function createLink(state, text, icon, callback) {
     var menuItem = document.createElement("li");
     var link = document.createElement("a");
     link.setAttribute("href", "#");
@@ -772,7 +783,8 @@ function createLink(state, item, text, icon, callback) {
     link.addEventListener("click", function (event) {
         event.preventDefault();
         event.stopPropagation();
-        callback().then(function (_) {
+        globalDocumentCloseAllMenu();
+        callback(event).then(function (_) {
         }).catch(function (error) {
             state.handler.debug(error);
         });
@@ -789,7 +801,46 @@ function createDivider() {
 function createItemLinks(state, item) {
     var links = [];
     var parent = item.getParentContainer();
-    links.push(createLink(state, item, "Remove", "remove", function () {
+    links.push(createLink(state, "Change style", "wrench", function (event) {
+        var currentSelection;
+        var hasChanged = false;
+        return state.handler.getAllowedStyles(parent.token, parent.layoutId, item.id).then(function (styles) {
+            var content = document.createElement("form");
+            var select = document.createElement("select");
+            content.appendChild(select);
+            var hasDefault = false;
+            for (var style in styles) {
+                var option = document.createElement("option");
+                option.value = style;
+                option.innerHTML = styles[style];
+                select.appendChild(option);
+                if (style === item_1.Item.DefaultStyle) {
+                    hasDefault = true;
+                }
+            }
+            if (!hasDefault) {
+                var option = document.createElement("option");
+                option.value = item_1.Item.DefaultStyle;
+                option.innerHTML = "Default";
+                select.insertBefore(option, select.firstElementChild);
+            }
+            select.addEventListener("change", function () {
+                currentSelection = select.value;
+                hasChanged = true;
+            });
+            dialog_1.createModal("Set style", content, event.pageX, event.pageY).then(function () {
+                if (hasChanged) {
+                    return state.handler.setStyle(parent.token, parent.layoutId, item.id, currentSelection).then(function (element) {
+                        item.element.parentElement.replaceChild(element, item.element);
+                        state.init(element);
+                        state.initItem(element, parent);
+                    });
+                }
+            });
+        });
+    }));
+    links.push(createDivider());
+    links.push(createLink(state, "Remove", "remove", function () {
         return state.handler.removeItem(parent.token, parent.layoutId, item.id).then(function () {
             state.remove(item.element);
         });
@@ -798,14 +849,14 @@ function createItemLinks(state, item) {
 }
 function createHorizontalLinks(state, container) {
     var links = [];
-    links.push(createLink(state, container, "Add column to left", "chevron-left", function () {
+    links.push(createLink(state, "Add column to left", "chevron-left", function () {
         return state.handler.addColumn(container.token, container.layoutId, container.id, 0).then(function (element) {
             container.element.insertBefore(element, container.element.firstChild);
             state.init(element);
             state.initContainer(element, container);
         });
     }));
-    links.push(createLink(state, container, "Add column to right", "chevron-right", function () {
+    links.push(createLink(state, "Add column to right", "chevron-right", function () {
         var position = item_1.getContainerCount(container.element);
         return state.handler.addColumn(container.token, container.layoutId, container.id, position).then(function (element) {
             container.element.appendChild(element);
@@ -814,7 +865,7 @@ function createHorizontalLinks(state, container) {
         });
     }));
     links.push(createDivider());
-    links.push(createLink(state, container, "Remove", "remove", function () {
+    links.push(createLink(state, "Remove", "remove", function () {
         return state.handler.removeItem(container.token, container.layoutId, container.id).then(function () {
             state.remove(container.element);
         });
@@ -824,14 +875,14 @@ function createHorizontalLinks(state, container) {
 function createLayoutLinks(state, container) {
     var links = [];
     links.push(createDivider());
-    links.push(createLink(state, container, "Add columns to top", "columns", function () {
+    links.push(createLink(state, "Add columns to top", "columns", function () {
         return state.handler.addColumnContainer(container.token, container.layoutId, container.id, 0).then(function (element) {
             container.element.insertBefore(element, container.element.firstChild);
             state.init(element);
             state.initContainer(element, container);
         });
     }));
-    links.push(createLink(state, container, "Add columns to bottom", "columns", function () {
+    links.push(createLink(state, "Add columns to bottom", "columns", function () {
         var position = item_1.getContainerCount(container.element);
         return state.handler.addColumn(container.token, container.layoutId, container.id, position).then(function (element) {
             container.element.appendChild(element);
@@ -846,14 +897,14 @@ function createColumnLinks(state, container) {
     var links = createLayoutLinks(state, container);
     var parent = container.getParentContainer();
     links.push(createDivider());
-    links.push(createLink(state, container, "Add column before", "chevron-left", function () {
+    links.push(createLink(state, "Add column before", "chevron-left", function () {
         return state.handler.addColumn(parent.token, parent.layoutId, parent.id, container.getPosition()).then(function (element) {
             parent.element.insertBefore(element, container.element);
             state.init(element);
             state.initContainer(element, parent);
         });
     }));
-    links.push(createLink(state, container, "Add column after", "chevron-right", function () {
+    links.push(createLink(state, "Add column after", "chevron-right", function () {
         return state.handler.addColumn(parent.token, parent.layoutId, parent.id, container.getPosition() + 1).then(function (element) {
             parent.element.insertBefore(element, container.element.nextSibling);
             state.init(element);
@@ -861,7 +912,7 @@ function createColumnLinks(state, container) {
         });
     }));
     links.push(createDivider());
-    links.push(createLink(state, container, "Remove this column", "remove", function () {
+    links.push(createLink(state, "Remove this column", "remove", function () {
         return state.handler.removeItem(container.token, container.layoutId, container.id).then(function () {
             state.remove(container.element);
         });
@@ -911,6 +962,38 @@ function createMenu(state, item) {
     item.element.insertBefore(parentElement, item.element.firstChild);
 }
 exports.createMenu = createMenu;
+
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var DIALOG_TEMPLATE = "<div class=\"layout-modal\" tabindex=\"-1\" role=\"dialog\">\n  <div role=\"document\">\n    <button name=\"close\" type=\"button\" aria-label=\"Close\">\n      <span aria-hidden=\"true\">&times;</span>\n    </button>\n    <h4 class=\"modal-title\">__TITLE__</h4>\n    <div id=\"content\"></div>\n  </div>\n</div>";
+function createModal(title, content, posX, posY) {
+    return new Promise(function (resolve, reject) {
+        var temp = document.createElement('div');
+        temp.innerHTML = DIALOG_TEMPLATE.replace(new RegExp('__TITLE__', 'g'), title);
+        var dialog = temp.firstElementChild;
+        var placeholder = dialog.querySelector("#content");
+        placeholder.parentElement.replaceChild(content, placeholder);
+        document.body.appendChild(dialog);
+        dialog.style.display = "block";
+        dialog.style.position = "absolute";
+        dialog.style.left = posX.toString() + "px";
+        dialog.style.top = posY.toString() + "px";
+        dialog.style.transform = "translate(-50%, -50%)";
+        dialog.classList.add("open");
+        dialog.querySelector("button[name=close]").addEventListener("click", function (event) {
+            event.preventDefault();
+            dialog.remove();
+            resolve();
+        });
+    });
+}
+exports.createModal = createModal;
 
 
 /***/ })

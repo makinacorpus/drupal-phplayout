@@ -1,6 +1,7 @@
 
 import { Container, ContainerType, Item, getContainerCount } from "../item";
 import { State } from "../state";
+import { createModal } from "./dialog";
 
 // @todo move left, move right, move up, move down, in menus
 
@@ -29,6 +30,14 @@ function globalDocumentCloseMenuListener(event: MouseEvent) {
             if (!(event.target instanceof Node) || !menu.element.contains(event.target)) {
                 menu.close();
             }
+        }
+    }
+}
+
+function globalDocumentCloseAllMenu() {
+    if (globalMenuRegistry.length) {
+        for (let menu of globalMenuRegistry) {
+            menu.close();
         }
     }
 }
@@ -67,7 +76,7 @@ class Menu {
     }
 }
 
-function createLink(state: State, item: Item, text: string, icon: void | string, callback: () => Promise<void>): Element {
+function createLink(state: State, text: string, icon: void | string, callback: (event: MouseEvent) => Promise<any>): Element {
     const menuItem = document.createElement("li");
 
     const link = document.createElement("a");
@@ -79,12 +88,14 @@ function createLink(state: State, item: Item, text: string, icon: void | string,
     }
     link.innerHTML += text;
 
-    link.addEventListener("click", function (event: Event) {
+    link.addEventListener("click", function (event: MouseEvent) {
         event.preventDefault();
         event.stopPropagation();
 
+        globalDocumentCloseAllMenu();
+
         // @todo loader
-        callback().then(_ => {
+        callback(event).then(_ => {
             // ok
         }).catch(error => {
             // not ok
@@ -109,7 +120,53 @@ function createItemLinks(state: State, item: Item): Element[] {
     const links: Element[] = [];
     const parent = item.getParentContainer();
 
-    links.push(createLink(state, item, "Remove", "remove", () => {
+    links.push(createLink(state, "Change style", "wrench", (event: MouseEvent): Promise<any> => {
+
+        let currentSelection: undefined | string;
+        let hasChanged = false;
+
+        return state.handler.getAllowedStyles(parent.token, parent.layoutId, item.id).then((styles: any) => {
+            const content = document.createElement("form");
+            const select = document.createElement("select");
+            content.appendChild(select);
+
+            let hasDefault = false;
+            for (let style in styles) {
+                let option = <HTMLOptionElement>document.createElement("option");
+                option.value = style;
+                option.innerHTML = styles[style];
+                select.appendChild(option);
+                if (style === Item.DefaultStyle) {
+                    hasDefault = true;
+                }
+            }
+            if (!hasDefault) {
+                let option = <HTMLOptionElement>document.createElement("option");
+                option.value = Item.DefaultStyle;
+                option.innerHTML = "Default";
+                select.insertBefore(option, select.firstElementChild);
+            }
+
+            select.addEventListener("change", () => {
+                currentSelection = select.value;
+                hasChanged = true;
+            });
+
+            createModal("Set style", content, event.pageX, event.pageY).then((): any => {
+                if (hasChanged) {
+                    return state.handler.setStyle(parent.token, parent.layoutId, item.id, currentSelection).then((element: Element) => {
+                        (<Element>item.element.parentElement).replaceChild(element, item.element);
+                        state.init(element);
+                        state.initItem(element, parent);
+                    });
+                }
+            });
+        })
+    }));
+
+    links.push(createDivider());
+
+    links.push(createLink(state, "Remove", "remove", () => {
         return state.handler.removeItem(parent.token, parent.layoutId, item.id).then(() => {
             state.remove(item.element);
         });
@@ -121,14 +178,14 @@ function createItemLinks(state: State, item: Item): Element[] {
 function createHorizontalLinks(state: State, container: Container): Element[] {
     const links: Element[] = [];
 
-    links.push(createLink(state, container, "Add column to left", "chevron-left", () => {
+    links.push(createLink(state, "Add column to left", "chevron-left", () => {
         return state.handler.addColumn(container.token, container.layoutId, container.id, 0).then(element => {
             container.element.insertBefore(element, container.element.firstChild);
             state.init(element);
             state.initContainer(element, container);
         });
     }));
-    links.push(createLink(state, container, "Add column to right", "chevron-right", () => {
+    links.push(createLink(state, "Add column to right", "chevron-right", () => {
         const position = getContainerCount(container.element);
         return state.handler.addColumn(container.token, container.layoutId, container.id, position).then(element => {
             container.element.appendChild(element);
@@ -139,7 +196,7 @@ function createHorizontalLinks(state: State, container: Container): Element[] {
 
     links.push(createDivider());
 
-    links.push(createLink(state, container, "Remove", "remove", () => {
+    links.push(createLink(state, "Remove", "remove", () => {
         return state.handler.removeItem(container.token, container.layoutId, container.id).then(() => {
             state.remove(container.element);
         });
@@ -156,14 +213,14 @@ function createLayoutLinks(state: State, container: Container): Element[] {
     links.push(createDivider());
 
     // prepend column container: th-large layout/ajax/add-column-container (containerId, position = 0, columnCount = 2)
-    links.push(createLink(state, container, "Add columns to top", "columns", () => {
+    links.push(createLink(state, "Add columns to top", "columns", () => {
         return state.handler.addColumnContainer(container.token, container.layoutId, container.id, 0).then(element => {
             container.element.insertBefore(element, container.element.firstChild);
             state.init(element);
             state.initContainer(element, container);
         });
     }));
-    links.push(createLink(state, container, "Add columns to bottom", "columns", () => {
+    links.push(createLink(state, "Add columns to bottom", "columns", () => {
         const position = getContainerCount(container.element);
         return state.handler.addColumn(container.token, container.layoutId, container.id, position).then(element => {
             container.element.appendChild(element);
@@ -189,14 +246,14 @@ function createColumnLinks(state: State, container: Container): Element[] {
 
     links.push(createDivider());
 
-    links.push(createLink(state, container, "Add column before", "chevron-left", () => {
+    links.push(createLink(state, "Add column before", "chevron-left", () => {
         return state.handler.addColumn(parent.token, parent.layoutId, parent.id, container.getPosition()).then(element => {
             parent.element.insertBefore(element, container.element);
             state.init(element);
             state.initContainer(element, parent);
         });
     }));
-    links.push(createLink(state, container, "Add column after", "chevron-right", () => {
+    links.push(createLink(state, "Add column after", "chevron-right", () => {
         return state.handler.addColumn(parent.token, parent.layoutId, parent.id, container.getPosition() + 1).then(element => {
             parent.element.insertBefore(element, container.element.nextSibling);
             state.init(element);
@@ -206,7 +263,7 @@ function createColumnLinks(state: State, container: Container): Element[] {
 
     links.push(createDivider());
 
-    links.push(createLink(state, container, "Remove this column", "remove", () => {
+    links.push(createLink(state, "Remove this column", "remove", () => {
         return state.handler.removeItem(container.token, container.layoutId, container.id).then(() => {
             state.remove(container.element);
         });

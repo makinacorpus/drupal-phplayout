@@ -84,6 +84,8 @@ export function getItem(element: Element): Item {
 // instanceof later (god I hate JavaScript); same goes for the Container
 // class, and we need it.
 export class Item {
+    static DefaultStyle = "_default";
+
     readonly id: string;
     readonly type: string;
     readonly element: Element;

@@ -1,5 +1,6 @@
 
 import { LayoutHandler } from "../handler";
+import { Item } from "../item";
 
 enum AjaxRoute {
     Add = 'layout/ajax/add-item',
@@ -92,7 +93,7 @@ export class AjaxLayoutHandler implements LayoutHandler {
             containerId: containerId,
             position: position,
             columnCount: columnCount || 2,
-            style: style || "default",
+            style: style || Item.DefaultStyle,
             destination: this.destination
         });
 
@@ -107,7 +108,7 @@ export class AjaxLayoutHandler implements LayoutHandler {
             itemType: itemType,
             itemId: itemId,
             position: position,
-            style: "default",
+            style: style || Item.DefaultStyle,
             destination: this.destination
         });
 
@@ -115,7 +116,7 @@ export class AjaxLayoutHandler implements LayoutHandler {
     }
 
     async getAllowedStyles(token: string, layout: string, itemId: string): Promise<any> {
-        const req = await this.request(AjaxRoute.AddColumnContainer, {
+        const req = await this.request(AjaxRoute.GetAllowedStyles, {
             token: token,
             layout: layout,
             itemId: itemId,
@@ -161,12 +162,12 @@ export class AjaxLayoutHandler implements LayoutHandler {
         return this.createElementFromResponse(req);
     }
 
-    async setStyle(token: string, layout: string, itemId: string, style: string): Promise<Element> {
+    async setStyle(token: string, layout: string, itemId: string, style?: string): Promise<Element> {
         const req = await this.request(AjaxRoute.SetStyle, {
             token: token,
             layout: layout,
             itemId: itemId,
-            style: style,
+            style: style || null,
             destination: this.destination
         });
 

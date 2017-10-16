@@ -9,5 +9,5 @@ export interface LayoutHandler {
     moveItem(token: string, layout: string, containerId: string, itemId: string, newPosition: number): Promise<void>;
     removeItem(token: string, layout: string, itemId: string): Promise<void>;
     renderItem(token: string, layout: string, itemId: string): Promise<Element>;
-    setStyle(token: string, layout: string, itemId: string, style: string): Promise<Element>;
+    setStyle(token: string, layout: string, itemId: string, style?: string): Promise<Element>;
 }

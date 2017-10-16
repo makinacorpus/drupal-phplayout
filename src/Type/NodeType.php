@@ -111,6 +111,8 @@ class NodeType implements ItemTypeInterface
      */
     public function getAllowedStylesFor(ItemInterface $item) : array
     {
+        $ret = [ItemInterface::STYLE_DEFAULT  => t("Teaser")];
+
         // We need to list the available view modes for a node
         // @todo this code is NOT d8 friendly
         $node = $this->entityManager->getStorage('node')->load($item->getId());
@@ -119,11 +121,14 @@ class NodeType implements ItemTypeInterface
             return [ItemInterface::STYLE_DEFAULT => t("Default")];
         }
 
-        // $settings = field_view_mode_settings('node', $node->bundle());
-        return [
-            ItemInterface::STYLE_DEFAULT  => t("Teaser"),
-            'full'                        => t("Full"),
-        ];
+        $settings = field_view_mode_settings('node', $node->bundle());
+        foreach ($settings as $viewMode => $info) {
+            if ($info['custom_settings'] && $viewMode !== "default") { // Ignore Drupal default, confusing and stupid
+                $ret[$viewMode] = $info['label'];
+            }
+        }
+
+        return $ret;
     }
 
     /**
