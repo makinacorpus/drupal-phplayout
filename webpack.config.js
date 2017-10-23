@@ -1,8 +1,8 @@
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const ExtractTextPlugin = require("extract-text-webpack-plugin");
+const MinifyPlugin = require("babel-minify-webpack-plugin");
 const path = require('path');
 const webpack = require('webpack');
-const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 const distDirectory = path.resolve(__dirname, 'public');
 const extractLess = new ExtractTextPlugin({
@@ -10,52 +10,45 @@ const extractLess = new ExtractTextPlugin({
 });
 
 module.exports = {
-  entry: './resources/index.js',
-
+  entry: ['core-js/modules/es6.promise', './resources/index.js'],
   //devtool: 'source-map',
-
   plugins: [
     new CleanWebpackPlugin([
       distDirectory
     ]),
-    new UglifyJSPlugin(),
-    new webpack.LoaderOptionsPlugin({
-      options: {
-        jshint: {
-          esversion: 6
-        }
-      }
-    }),
+    new MinifyPlugin(),
     extractLess
   ],
-
   module: {
     rules: [{
-      test: /\.tsx?$/,
+      test: /\.ts$/,
       exclude: /node_modules/,
-      use: "ts-loader"
-    }, {
+      use: [{
+        loader: "babel-loader"
+      }, {
+        loader: "ts-loader"
+      }],
+    },{
       test: /\.js$/,
-      enforce: "pre",
       exclude: /node_modules/,
-      use: "jshint-loader"
-    }, {
+      use: [{
+        loader: "babel-loader"
+      }]
+    },{
       test: /\.less$/,
       use: extractLess.extract({
         fallback: "style-loader",
         use: [{
           loader: "css-loader"
-        }, {
+        },{
           loader: "less-loader"
         }]
       })
     }]
   },
-
   resolve: {
-    extensions: [".tsx", ".ts", ".js"]
+    extensions: [".tsx", ".ts", ".js", ".less"]
   },
-
   output: {
     filename: 'edit.js',
     path: distDirectory
