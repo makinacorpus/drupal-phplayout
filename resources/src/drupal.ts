@@ -23,6 +23,9 @@ class DrupalState extends State {
 
 Drupal.behaviors.Layout = {
     attach: (context: Element, settings: any) => {
+        if (!settings.layout) {
+            settings.layout = {};
+        }
         if (!state) {
             state = new DrupalState(new AjaxLayoutHandler(settings.basePath, settings.layout.destination));
         }
