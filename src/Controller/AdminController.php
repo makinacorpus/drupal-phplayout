@@ -167,7 +167,7 @@ class AdminController extends Controller
             $destination = '<front>';
         }
 
-        return $this->render('module:phplayout:templates/layout-summary.html.twig', [
+        return $this->render('@phplayout/templates/layout-summary.html.twig', [
             'layouts'       => $layouts,
             'token'         => $token ? $token->getToken() : null,
             'editableCount' => $editableCount,

@@ -37,7 +37,7 @@
     "require" : {
         "makinacorpus/drupal-dragula" : "^1",
         "makinacorpus/drupal-plusql" : "^1",
-        "makinacorpus/drupal-sf-dic" : "^3.3",
+        "makinacorpus/drupal-sf-dic" : "^3.3.6",
         "makinacorpus/php-layout" : "*",
         "php": ">=7.0"
     },
