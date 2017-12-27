@@ -54,10 +54,10 @@ class LayoutStorage implements LayoutStorageInterface
         switch ($item->item_type) {
 
             case ContainerInterface::HORIZONTAL_CONTAINER:
-                return new HorizontalContainer($item->item_id);
+                return new HorizontalContainer($item->item_id, $item->style, $options);
 
             case ContainerInterface::VERTICAL_CONTAINER:
-                return new ColumnContainer($item->item_id);
+                return new ColumnContainer($item->item_id, $item->style, $options);
 
             default:
                 return $this->typeRegistry->getType($item->item_type)->create($item->item_id, $item->style, $options);
@@ -105,6 +105,10 @@ class LayoutStorage implements LayoutStorageInterface
 
                 if ($parent instanceof HorizontalContainer) {
                     $instance = $parent->createColumnAt($item->position, $item->item_id);
+                    if ($item->style) {
+                        $instance->setStyle($item->style);
+                        $instance->toggleUpdateStatus(false);
+                    }
                     $instance->setStorageId($layoutId, $item->id, true);
                 } else {
                     $instance = $this->populateLayoutCreateInstance($item, $options);
