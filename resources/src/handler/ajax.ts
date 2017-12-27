@@ -1,5 +1,5 @@
 
-import { LayoutHandler } from "../handler";
+import { LayoutHandler, StyleList } from "../handler";
 import { Item } from "../item";
 
 enum AjaxRoute {
@@ -115,7 +115,7 @@ export class AjaxLayoutHandler implements LayoutHandler {
         return this.createElementFromResponse(req);
     }
 
-    async getAllowedStyles(token: string, layout: string, itemId: string): Promise<any> {
+    async getAllowedStyles(token: string, layout: string, itemId: string): Promise<StyleList> {
         const req = await this.request(AjaxRoute.GetAllowedStyles, {
             token: token,
             layout: layout,
@@ -128,7 +128,9 @@ export class AjaxLayoutHandler implements LayoutHandler {
             throw `${req.status}: ${req.statusText}: got invalid response data`;
         }
 
-        return data.styles;
+        const ret: StyleList = {current: data.current || null, styles: data.styles};
+
+        return ret;
     }
 
     async moveItem(token: string, layout: string, containerId: string, itemId: string, newPosition: number): Promise<void> {

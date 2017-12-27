@@ -2,14 +2,15 @@
 import { Container, ContainerType, Item, getContainerCount } from "../item";
 import { State } from "../state";
 import { createModal } from "./dialog";
+import { StyleList } from "../handler";
 
 // @todo move left, move right, move up, move down, in menus
 
 const ICON_TEMPLATE = `<span class="fa fa-__GLYPH__" aria-hidden="true"></span> `;
 const DRAG_TEMPLATE =
-`<a role="drag" title="Maintain left mouse button to move">
+`<span role="drag" title="Maintain left mouse button to move">
   <span class="fa fa-arrows" aria-hidden="true"></span>
-</a>`;
+</span>`;
 
 const MENU_TEMPLATE =
 `<div class="layout-menu" data-menu="1">
@@ -120,30 +121,33 @@ function createItemLinks(state: State, item: Item): Element[] {
     const links: Element[] = [];
     const parent = item.getParentContainer();
 
-    links.push(createLink(state, "Change style", "wrench", (event: MouseEvent): Promise<any> => {
+    links.push(createLink(state, state.translate("Change style"), "wrench", (event: MouseEvent): Promise<any> => {
 
         let currentSelection: undefined | string;
         let hasChanged = false;
 
-        return state.handler.getAllowedStyles(parent.token, parent.layoutId, item.id).then((styles: any) => {
+        return state.handler.getAllowedStyles(parent.token, parent.layoutId, item.id).then((styleList: StyleList) => {
             const content = document.createElement("form");
             const select = document.createElement("select");
             content.appendChild(select);
 
             let hasDefault = false;
-            for (let style in styles) {
+            for (let style in styleList.styles) {
                 let option = <HTMLOptionElement>document.createElement("option");
                 option.value = style;
-                option.innerHTML = styles[style];
+                option.innerHTML = styleList.styles[style];
                 select.appendChild(option);
                 if (style === Item.DefaultStyle) {
                     hasDefault = true;
+                }
+                if (styleList.current && style === styleList.current) {
+                    option.selected = true;
                 }
             }
             if (!hasDefault) {
                 let option = <HTMLOptionElement>document.createElement("option");
                 option.value = Item.DefaultStyle;
-                option.innerHTML = "Default";
+                option.innerHTML = state.translate("Default");
                 select.insertBefore(option, select.firstElementChild);
             }
 
@@ -152,7 +156,7 @@ function createItemLinks(state: State, item: Item): Element[] {
                 hasChanged = true;
             });
 
-            createModal("Set style", content, event.pageX, event.pageY).then((): any => {
+            createModal(state.translate("Set style"), content, event.pageX, event.pageY).then((): any => {
                 if (hasChanged) {
                     return state.handler.setStyle(parent.token, parent.layoutId, item.id, currentSelection).then((element: Element) => {
                         (<Element>item.element.parentElement).replaceChild(element, item.element);
@@ -166,7 +170,7 @@ function createItemLinks(state: State, item: Item): Element[] {
 
     links.push(createDivider());
 
-    links.push(createLink(state, "Remove", "remove", () => {
+    links.push(createLink(state, state.translate("Remove"), "remove", () => {
         return state.handler.removeItem(parent.token, parent.layoutId, item.id).then(() => {
             state.remove(item.element);
         });
@@ -178,14 +182,14 @@ function createItemLinks(state: State, item: Item): Element[] {
 function createHorizontalLinks(state: State, container: Container): Element[] {
     const links: Element[] = [];
 
-    links.push(createLink(state, "Add column to left", "chevron-left", () => {
+    links.push(createLink(state, state.translate("Add column to left"), "chevron-left", () => {
         return state.handler.addColumn(container.token, container.layoutId, container.id, 0).then(element => {
             container.element.insertBefore(element, container.element.firstChild);
             state.init(element);
             state.initContainer(element, container);
         });
     }));
-    links.push(createLink(state, "Add column to right", "chevron-right", () => {
+    links.push(createLink(state, state.translate("Add column to right"), "chevron-right", () => {
         const position = getContainerCount(container.element);
         return state.handler.addColumn(container.token, container.layoutId, container.id, position).then(element => {
             container.element.appendChild(element);
@@ -196,7 +200,7 @@ function createHorizontalLinks(state: State, container: Container): Element[] {
 
     links.push(createDivider());
 
-    links.push(createLink(state, "Remove", "remove", () => {
+    links.push(createLink(state, state.translate("Remove"), "remove", () => {
         return state.handler.removeItem(container.token, container.layoutId, container.id).then(() => {
             state.remove(container.element);
         });
@@ -210,17 +214,18 @@ function createLayoutLinks(state: State, container: Container): Element[] {
 
     // options: wrench layout/callback/edit-item (itemId)
 
-    links.push(createDivider());
+    // links.push(createDivider());
 
     // prepend column container: th-large layout/ajax/add-column-container (containerId, position = 0, columnCount = 2)
-    links.push(createLink(state, "Add columns to top", "columns", () => {
+
+    links.push(createLink(state, state.translate("Add columns to top"), "columns", () => {
         return state.handler.addColumnContainer(container.token, container.layoutId, container.id, 0).then(element => {
             container.element.insertBefore(element, container.element.firstChild);
             state.init(element);
             state.initContainer(element, container);
         });
     }));
-    links.push(createLink(state, "Add columns to bottom", "columns", () => {
+    links.push(createLink(state, state.translate("Add columns to bottom"), "columns", () => {
         const position = getContainerCount(container.element);
         return state.handler.addColumn(container.token, container.layoutId, container.id, position).then(element => {
             container.element.appendChild(element);
@@ -231,7 +236,7 @@ function createLayoutLinks(state: State, container: Container): Element[] {
 
     // append column container: th-large layout/ajax/add-column-container (containerId, position = length, columnCount = 2)
 
-    links.push(createDivider());
+    // links.push(createDivider());
 
     // prepend item: picture layout/callback/add-item (containerId, position = 0)
     // append item: picture layout/callback/add-item (containerId, position = length)
@@ -246,14 +251,63 @@ function createColumnLinks(state: State, container: Container): Element[] {
 
     links.push(createDivider());
 
-    links.push(createLink(state, "Add column before", "chevron-left", () => {
+    links.push(createLink(state, state.translate("Change style"), "wrench", (event: MouseEvent): Promise<any> => {
+
+        let currentSelection: undefined | string;
+        let hasChanged = false;
+
+        return state.handler.getAllowedStyles(parent.token, parent.layoutId, container.id).then((styleList: StyleList) => {
+            const content = document.createElement("form");
+            const select = document.createElement("select");
+            content.appendChild(select);
+
+            let hasDefault = false;
+            for (let style in styleList.styles) {
+                let option = <HTMLOptionElement>document.createElement("option");
+                option.value = style;
+                option.innerHTML = styleList.styles[style];
+                select.appendChild(option);
+                if (style === Item.DefaultStyle) {
+                    hasDefault = true;
+                }
+                if (styleList.current && style === styleList.current) {
+                    option.selected = true;
+                }
+            }
+            if (!hasDefault) {
+                let option = <HTMLOptionElement>document.createElement("option");
+                option.value = Item.DefaultStyle;
+                option.innerHTML = state.translate("Default");
+                select.insertBefore(option, select.firstElementChild);
+            }
+
+            select.addEventListener("change", () => {
+                currentSelection = select.value;
+                hasChanged = true;
+            });
+
+            createModal(state.translate("Set style"), content, event.pageX, event.pageY).then((): any => {
+                if (hasChanged) {
+                    return state.handler.setStyle(parent.token, parent.layoutId, container.id, currentSelection).then((element: Element) => {
+                        (<Element>container.element.parentElement).replaceChild(element, container.element);
+                        state.init(element);
+                        state.initContainer(element, parent);
+                    });
+                }
+            });
+        })
+    }));
+
+    links.push(createDivider());
+
+    links.push(createLink(state, state.translate("Add column before"), "chevron-left", () => {
         return state.handler.addColumn(parent.token, parent.layoutId, parent.id, container.getPosition()).then(element => {
             parent.element.insertBefore(element, container.element);
             state.init(element);
             state.initContainer(element, parent);
         });
     }));
-    links.push(createLink(state, "Add column after", "chevron-right", () => {
+    links.push(createLink(state, state.translate("Add column after"), "chevron-right", () => {
         return state.handler.addColumn(parent.token, parent.layoutId, parent.id, container.getPosition() + 1).then(element => {
             parent.element.insertBefore(element, container.element.nextSibling);
             state.init(element);
@@ -263,7 +317,7 @@ function createColumnLinks(state: State, container: Container): Element[] {
 
     links.push(createDivider());
 
-    links.push(createLink(state, "Remove this column", "remove", () => {
+    links.push(createLink(state, state.translate("Remove this column"), "remove", () => {
         return state.handler.removeItem(container.token, container.layoutId, container.id).then(() => {
             state.remove(container.element);
         });
@@ -276,23 +330,23 @@ function createColumnLinks(state: State, container: Container): Element[] {
 export function createMenu(state: State, item: Item): void {
 
     let links: Element[] = [];
-    let title: string = "Error";
+    let title: string = state.translate("Error");
     let addDragIcon = false;
 
     if (item instanceof Container) {
         if (item.type === ContainerType.Column) {
-            title = "Column";
+            title = state.translate("Column");
             links = createColumnLinks(state, item);
         } else if (item.type === ContainerType.Horizontal) {
-            title = "Columns container";
+            title = state.translate("Columns container");
             links = createHorizontalLinks(state, item);
             addDragIcon = true;
         } else {
-            title = "Layout";
+            title = state.translate("Layout");
             links = createLayoutLinks(state, item);
         }
     } else {
-        title = "Item";
+        title = state.translate("Item");
         links = createItemLinks(state, item);
         addDragIcon = true;
     }
@@ -321,7 +375,6 @@ export function createMenu(state: State, item: Item): void {
     globalMenuRegistry.push(new Menu(item, parentElement));
     item.element.insertBefore(parentElement, item.element.firstChild);
 
-// @todo we need this, else column containers cannot be moved up/down
 //    if (addDragIcon) {
 //        let dragElement: Element = document.createElement('div');
 //        dragElement.innerHTML = DRAG_TEMPLATE;

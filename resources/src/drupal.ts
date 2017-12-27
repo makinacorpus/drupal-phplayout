@@ -15,6 +15,11 @@ class DrupalState extends State {
         Drupal.attachBehaviors(context);
     }
 
+    // Use Drupal translation system
+    translate(text: string, variables?: any): string {
+        return Drupal.t(text, variables);
+    }
+
     // init() variant that does not call Drupal behaviours
     initNoBehaviors(context: Element): void {
         super.init(context);

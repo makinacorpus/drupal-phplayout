@@ -15,15 +15,22 @@ export class State {
         this.drake = dragula({
             copy: (element: Element, source: Element): boolean => {
                 try {
-                    return getContainer(source).readonly || getItem(element).readonly;
-                } catch (error) { // It may happen that we actually hit a non-container
+                    if (getContainer(source).readonly) {
+                        return true;
+                    }
+                } catch (error) { // It may happen that we actually hit a non-container (source)
+                    return true;
+                }
+                try {
+                    return getItem(element).readonly
+                } catch (error) {
                     return false;
                 }
             },
             accepts: (element: Element, target: Element): boolean => {
                 try {
                     return !getContainer(target).readonly;
-                } catch (error) { // It may happen that we actually hit a non-container
+                } catch (error) { // It may happen that we actually hit a non-container (source)
                     return false;
                 }
             },
@@ -62,6 +69,13 @@ export class State {
         this.drake.on('over', (element: Element, source: Element) => {
             this.onOver(element, source)
         });
+    }
+
+    translate(text: string, variables?: any): string {
+        for (let name in variables) {
+            text = text.replace(name, variables[name]);
+        }
+        return text;
     }
 
     // Terminate an element completly, at least from this API perspective.
