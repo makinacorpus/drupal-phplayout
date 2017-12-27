@@ -123,7 +123,7 @@ class NodeType implements ItemTypeInterface
 
         $settings = field_view_mode_settings('node', $node->bundle());
         foreach ($settings as $viewMode => $info) {
-            if ($info['custom_settings'] && $viewMode !== "default") { // Ignore Drupal default, confusing and stupid
+            if ($info['custom_settings'] && $viewMode !== "default" && $viewMode !== "teaser") { // Ignore Drupal default, confusing and stupid
                 $ret[$viewMode] = $info['label'];
             }
         }
