@@ -16,7 +16,7 @@ module.exports = {
     new CleanWebpackPlugin([
       distDirectory
     ]),
-    new MinifyPlugin(),
+    //new MinifyPlugin(),
     extractLess
   ],
   module: {
