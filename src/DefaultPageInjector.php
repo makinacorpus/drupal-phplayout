@@ -67,7 +67,7 @@ class DefaultPageInjector
             $topLevel = $layout->getTopLevelContainer();
 
             if ($isEditable || !$topLevel->isEmpty()) {
-                $page[$region]['layout'][$layout->getId()] = ['#markup' => $this->renderer->render($topLevel, $this->context)];
+                $page[$region]['layout'][$layout->getId()] = ['#markup' => $this->renderer->render($topLevel)];
             }
         }
 
